@@ -13,7 +13,7 @@ Protótipo do aplicativo SE Educa, desenvolvido no projeto de Residência 1 do c
 - Kristiane Cavalcante
 
 ## Links
-- Produção (main): COLE-AQUI-O-LINK-DA-VERCEL
+- Produção (main): https://se-educa-front.vercel.app/
 
 ## Branches
 - **main**: versão estável
