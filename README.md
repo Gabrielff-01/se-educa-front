@@ -23,3 +23,23 @@ Protótipo do aplicativo SE Educa, desenvolvido no projeto de Residência 1 do c
 ## Como rodar no computador
 pnpm install
 pnpm dev
+## Estrutura de pastas
+```
+src/
+  App.tsx       casca do app: guarda a tela atual e o perfil e escolhe qual tela mostrar
+  routes.ts     lista de telas (#/notas, #/perfil...) e a tela inicial de cada perfil
+  types.ts      tipos usados em várias partes (Perfil, TabId...)
+  components/   peças reutilizáveis: TopBar, BottomNav, Avatar, botões, ícones
+  screens/      uma tela por arquivo, separadas por perfil
+    acesso/       Splash, Login, Cadastro
+    aluno/        telas do aluno
+    responsavel/  telas do responsável
+    professor/    telas do professor
+    escola/       telas da gestão da escola
+    secretaria/   telas da Secretaria de Educação
+    servicos/     matrícula, escolas, secretaria virtual
+    comum/        telas que todos os perfis usam (perfil, notificações, chat...)
+  data/         dados fictícios (quando tiver back-end, isso vem da API)
+  hooks/        funções reutilizáveis do React (ex.: useToast)
+  theme/        cores do app
+```
