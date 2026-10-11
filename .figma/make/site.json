@@ -1,0 +1,10 @@
+{
+  "description": "A comprehensive educational platform connecting students, teachers, schools, and education authorities in Brazil, offering easy access to grades, attendance, and resources.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
