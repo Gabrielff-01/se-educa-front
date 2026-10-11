@@ -71,25 +71,10 @@ const PINK = "#ec4899";
 const INK = "#0f2135";
 const INK_SOFT = "#47586b";
 
-/* ---------------------------- Status Bar ---------------------------- */
-function StatusBar({ dark = false }: { dark?: boolean }) {
-  const c = dark ? "#ffffff" : INK;
-  return (
-    <div className="relative z-40 flex items-center justify-between px-8 pt-3.5 pb-1 text-[13px] font-semibold" style={{ color: c }}>
-      <span>9:41</span>
-      <div className="flex items-center gap-1.5">
-        <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><rect x="0" y="7" width="3" height="5" rx="1" fill={c} /><rect x="4.5" y="4.5" width="3" height="7.5" rx="1" fill={c} /><rect x="9" y="2" width="3" height="10" rx="1" fill={c} /><rect x="13.5" y="0" width="3" height="12" rx="1" fill={c} opacity="0.4" /></svg>
-        <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><path d="M8.5 3.5C10.4 3.5 12.1 4.2 13.4 5.4L14.7 4C13 2.5 10.9 1.6 8.5 1.6S4 2.5 2.3 4l1.3 1.4C4.9 4.2 6.6 3.5 8.5 3.5Z" fill={c} /><path d="M8.5 6.6c1 0 2 .4 2.7 1.1l1.3-1.4C11.4 5.2 10 4.6 8.5 4.6S5.6 5.2 4.5 6.3l1.3 1.4C6.5 7 7.5 6.6 8.5 6.6Z" fill={c} /><circle cx="8.5" cy="9.8" r="1.5" fill={c} /></svg>
-        <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="3" stroke={c} strokeOpacity="0.5" /><rect x="2.5" y="2.5" width="16" height="7" rx="1.5" fill={c} /><rect x="23" y="4" width="2" height="4" rx="1" fill={c} opacity="0.5" /></svg>
-      </div>
-    </div>
-  );
-}
-
 /* ---------------------------- Top Bar ---------------------------- */
 function TopBar({ title, subtitle, onBack, right, accent = BLUE }: { title: string; subtitle?: string; onBack?: () => void; right?: React.ReactNode; accent?: string }) {
   return (
-    <div className="flex items-center gap-3 px-5 pt-1 pb-3">
+    <div className="flex items-center gap-3 px-5 pt-4 pb-3">
       {onBack && (
         <button onClick={onBack} className="grid h-9 w-9 place-items-center rounded-full bg-white text-[color:var(--color-ink)] shadow-sm active:scale-95 transition" style={{ color: INK }}>
           <IconBack size={20} />
@@ -105,7 +90,9 @@ function TopBar({ title, subtitle, onBack, right, accent = BLUE }: { title: stri
   );
 }
 
-/* ---------------------------- Bottom Nav ---------------------------- */
+/* ---------------------------- Navegação principal ----------------------------
+   Responsiva: no celular é uma barra fixa embaixo; no tablet vira uma coluna
+   de ícones à esquerda; no desktop (lg) vira um menu lateral com os nomes. */
 type TabId = "inicio" | "academico" | "servicos" | "notificacoes" | "perfil";
 function BottomNav({ active, onChange, badge = 3 }: { active: TabId; onChange: (t: TabId) => void; badge?: number }) {
   const items: { id: TabId; label: string; Icon: (p: IconProps) => React.ReactElement }[] = [
@@ -116,25 +103,29 @@ function BottomNav({ active, onChange, badge = 3 }: { active: TabId; onChange: (
     { id: "perfil", label: "Perfil", Icon: IconUser },
   ];
   return (
-    <div className="border-t border-[color:var(--color-line)] bg-white/95 px-2 pb-6 pt-2 backdrop-blur">
-      <div className="flex items-stretch justify-between">
+    <nav className="border-t border-[color:var(--color-line)] bg-white/95 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur md:order-first md:w-24 md:flex-none md:border-t-0 md:border-r md:px-3 md:py-6 lg:w-60">
+      <div className="mb-8 hidden items-center justify-center gap-2 md:flex lg:justify-start lg:px-2">
+        <div className="grid h-10 w-10 flex-none place-items-center rounded-xl text-white" style={{ background: `linear-gradient(135deg, ${BLUE}, ${TEAL})` }}><IconGrad size={22} strokeWidth={2} /></div>
+        <p className="hidden text-[17px] font-extrabold lg:block" style={{ color: INK }}><span style={{ color: GREEN }}>SE</span> Educa</p>
+      </div>
+      <div className="flex items-stretch justify-between md:flex-col md:justify-start md:gap-1">
         {items.map(({ id, label, Icon }) => {
           const on = active === id;
           return (
-            <button key={id} onClick={() => onChange(id)} className="relative flex flex-1 flex-col items-center gap-1 py-1 transition active:scale-95" style={{ color: on ? BLUE : INK_SOFT }}>
+            <button key={id} onClick={() => onChange(id)} className={`relative flex flex-1 flex-col items-center gap-1 rounded-xl py-1 transition active:scale-95 md:flex-none md:py-3 lg:flex-row lg:gap-3 lg:px-3 ${on ? "md:bg-[#1a6fd414]" : ""}`} style={{ color: on ? BLUE : INK_SOFT }}>
               <div className="relative">
                 <Icon size={23} strokeWidth={on ? 2.2 : 1.7} />
                 {id === "notificacoes" && badge > 0 && (
                   <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[9px] font-bold text-white" style={{ background: RED }}>{badge}</span>
                 )}
               </div>
-              <span className="text-[10px] font-medium leading-none">{label}</span>
-              {on && <span className="absolute -top-2 h-1 w-8 rounded-full" style={{ background: BLUE }} />}
+              <span className="text-[10px] font-medium leading-none lg:text-[14px] lg:font-semibold">{label}</span>
+              {on && <span className="absolute -top-2 h-1 w-8 rounded-full md:hidden" style={{ background: BLUE }} />}
             </button>
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }
 
@@ -288,7 +279,7 @@ const PERFIS: { id: Perfil; label: string; Icon: (p: IconProps) => React.ReactEl
   { id: "escola", label: "Escola", Icon: IconGrid, cor: GREEN },
   { id: "secretaria", label: "Secretaria", Icon: IconShield, cor: AMBER },
 ];
-function Login({ onEnter, onCadastro }: { onEnter: (p: Perfil) => void; onCadastro: () => void }) {
+function Login({ onEnter, onCadastro, onTelas }: { onEnter: (p: Perfil) => void; onCadastro: () => void; onTelas: () => void }) {
   const [perfil, setPerfil] = useState<Perfil>("aluno");
   const [cpf, setCpf] = useState("");
   const [senha, setSenha] = useState("");
@@ -348,6 +339,9 @@ function Login({ onEnter, onCadastro }: { onEnter: (p: Perfil) => void; onCadast
         <div className="mt-8 flex items-center justify-center gap-2 text-[11px]" style={{ color: INK_SOFT }}>
           <IconShield size={14} /> Ambiente seguro · Governo de Sergipe
         </div>
+        <button onClick={onTelas} className="mx-auto mt-3 flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: BLUE }}>
+          <IconLayers size={15} /> Ver todas as telas do protótipo
+        </button>
       </div>
     </div>
   );
@@ -911,6 +905,7 @@ function Perfil({ back, onLogout, perfil, nav }: { back: () => void; onLogout: (
           {[
             { t: "Configurações e acessibilidade", d: "Fonte, contraste, notificações", Icon: IconGrid, s: "configuracoes" as ScreenId },
             { t: "Central de mensagens", d: "Falar com a escola", Icon: IconChat, s: "chat" as ScreenId },
+            { t: "Todas as telas do protótipo", d: "Atalho para qualquer tela", Icon: IconLayers, s: "telas" as ScreenId },
           ].map((o) => (
             <button key={o.t} onClick={() => nav(o.s)} className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-[color:var(--color-surface)] transition">
               <div className="grid h-9 w-9 flex-none place-items-center rounded-xl" style={{ background: BLUE + "12", color: BLUE }}><o.Icon size={18} /></div>
@@ -3173,16 +3168,25 @@ function FreqRegioes() {
 }
 
 /* ============================================================
-   App shell — device + navegação + galeria
+   App shell — tela cheia + navegação + rotas por endereço (#/tela)
    ============================================================ */
-type ScreenId =
-  | "splash" | "login" | "cadastro" | "alunoHome" | "responsavelHome" | "notas" | "frequencia" | "horarios" | "boletim"
-  | "matricula" | "escolas" | "acompanhamento" | "secretariaVirtual" | "notificacoes"
-  | "perfil" | "configuracoes" | "professorHome" | "escolaHome" | "secretariaHome" | "calendario" | "chat"
-  | "tarefas" | "comunicados" | "historico" | "profNotas" | "profFrequencia" | "profDiario" | "profPlanejamento"
-  | "admMatriculas" | "admTurmas" | "admProfessores" | "admHorarios" | "admDiario" | "admBoletins"
-  | "secMatriculas" | "secEnturmacao" | "secPedagogico" | "secCargaHoraria" | "secRegional"
-  | "mapaEstudos" | "transporte" | "merenda" | "mapaEscolas" | "secPesquisas" | "biblioteca" | "gestorFreqSocial" | "gestorPendencias";
+const SCREENS = [
+  "splash", "login", "cadastro", "alunoHome", "responsavelHome", "notas", "frequencia", "horarios", "boletim",
+  "matricula", "escolas", "acompanhamento", "secretariaVirtual", "notificacoes",
+  "perfil", "configuracoes", "professorHome", "escolaHome", "secretariaHome", "calendario", "chat",
+  "tarefas", "comunicados", "historico", "profNotas", "profFrequencia", "profDiario", "profPlanejamento",
+  "admMatriculas", "admTurmas", "admProfessores", "admHorarios", "admDiario", "admBoletins",
+  "secMatriculas", "secEnturmacao", "secPedagogico", "secCargaHoraria", "secRegional",
+  "mapaEstudos", "transporte", "merenda", "mapaEscolas", "secPesquisas", "biblioteca", "gestorFreqSocial", "gestorPendencias",
+  "telas",
+] as const;
+type ScreenId = (typeof SCREENS)[number];
+
+/* Lê a tela do endereço do navegador. Ex.: "site.com/#/notas" -> "notas" */
+function screenFromHash(): ScreenId | null {
+  const h = window.location.hash.replace(/^#\/?/, "");
+  return (SCREENS as readonly string[]).includes(h) ? (h as ScreenId) : null;
+}
 
 const HOME_BY_PERFIL: Record<Perfil, ScreenId> = { aluno: "alunoHome", responsavel: "responsavelHome", professor: "professorHome", escola: "escolaHome", secretaria: "secretariaHome" };
 
@@ -3197,6 +3201,31 @@ const GALLERY: { grupo: string; itens: { id: ScreenId; label: string }[] }[] = [
   { grupo: "Secretaria", itens: [{ id: "secretariaHome", label: "Home Secretaria" }, { id: "secMatriculas", label: "Matrículas da rede" }, { id: "secEnturmacao", label: "Enturmação" }, { id: "secPedagogico", label: "Gestão pedagógica" }, { id: "secCargaHoraria", label: "Carga horária" }, { id: "secRegional", label: "Contato Regional" }, { id: "secPesquisas", label: "Pesquisas recentes" }] },
 ];
 
+const TOTAL_TELAS = new Set(GALLERY.flatMap((g) => g.itens.map((i) => i.id))).size;
+
+function TodasTelas({ back, abrir }: { back: () => void; abrir: (s: ScreenId) => void }) {
+  return (
+    <>
+      <TopBar title="Todas as telas" subtitle={`Protótipo · ${TOTAL_TELAS} telas`} onBack={back} accent={BLUE} />
+      <Screen>
+        {GALLERY.map((g) => (
+          <div key={g.grupo}>
+            <SectionHeader title={g.grupo} />
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {g.itens.map((it) => (
+                <button key={g.grupo + it.id} onClick={() => abrir(it.id)} className="card flex items-center justify-between gap-2 px-3.5 py-3 text-left text-[13px] font-semibold transition active:scale-[0.98]" style={{ color: INK }}>
+                  {it.label}
+                  <IconChevron size={16} style={{ color: "#cbd5e1" }} />
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </Screen>
+    </>
+  );
+}
+
 const PERFIL_BY_SCREEN: Partial<Record<ScreenId, Perfil>> = {
   alunoHome: "aluno", responsavelHome: "responsavel",
   professorHome: "professor", profNotas: "professor", profFrequencia: "professor", profDiario: "professor", profPlanejamento: "professor",
@@ -3205,8 +3234,8 @@ const PERFIL_BY_SCREEN: Partial<Record<ScreenId, Perfil>> = {
 };
 
 export default function App() {
-  const [screen, setScreen] = useState<ScreenId>("splash");
-  const [perfil, setPerfil] = useState<Perfil>("aluno");
+  const [screen, setScreen] = useState<ScreenId>(() => screenFromHash() ?? "splash");
+  const [perfil, setPerfil] = useState<Perfil>(() => PERFIL_BY_SCREEN[screenFromHash() ?? "splash"] ?? "aluno");
   const [tab, setTab] = useState<TabId>("inicio");
   const [a11y, setA11y] = useState<A11y>({ fontScale: 1, contraste: false, animacoes: true });
 
@@ -3221,17 +3250,36 @@ export default function App() {
     else setScreen("perfil");
   };
 
-  const showChrome = !["splash", "login", "cadastro"].includes(screen);
+  const showChrome = !["splash", "login", "cadastro", "telas"].includes(screen);
   const showNav = showChrome && screen !== "chat";
 
   const [escCtx, setEscCtx] = useState<EscCtx>("todas");
   const nav = (s: ScreenId) => { if (s === "escolas") setEscCtx("todas"); setScreen(s); };
   const openGallery = (s: ScreenId) => { setScreen(s); const p = PERFIL_BY_SCREEN[s]; if (p) setPerfil(p); };
 
+  /* Rotas: cada tela ganha um endereço próprio (#/notas, #/perfil...).
+     Assim o botão "voltar" do navegador funciona e dá pra mandar o link de uma tela. */
+  const prevScreen = useRef<ScreenId | null>(null);
+  useEffect(() => {
+    const alvo = `#/${screen}`;
+    if (window.location.hash !== alvo) {
+      // A splash não entra no histórico: "voltar" a partir do login não deve reabrir ela
+      if (prevScreen.current === null || prevScreen.current === "splash") window.history.replaceState(null, "", alvo);
+      else window.history.pushState(null, "", alvo);
+    }
+    prevScreen.current = screen;
+  }, [screen]);
+  useEffect(() => {
+    const onVoltar = () => { const s = screenFromHash(); if (s) openGallery(s); };
+    window.addEventListener("popstate", onVoltar);
+    return () => window.removeEventListener("popstate", onVoltar);
+  }, []);
+  const voltar = () => (window.history.length > 1 ? window.history.back() : setScreen("login"));
+
   const renderScreen = () => {
     switch (screen) {
       case "splash": return <Splash go={() => setScreen("login")} />;
-      case "login": return <Login onEnter={(p) => { setPerfil(p); setScreen(HOME_BY_PERFIL[p]); setTab("inicio"); }} onCadastro={() => setScreen("cadastro")} />;
+      case "login": return <Login onEnter={(p) => { setPerfil(p); setScreen(HOME_BY_PERFIL[p]); setTab("inicio"); }} onCadastro={() => setScreen("cadastro")} onTelas={() => setScreen("telas")} />;
       case "cadastro": return <Cadastro back={() => setScreen("login")} />;
       case "alunoHome": return <AlunoHome nav={nav} />;
       case "responsavelHome": return <ResponsavelHome nav={nav} />;
@@ -3277,44 +3325,20 @@ export default function App() {
       case "gestorPendencias": return <GestorPendencias back={goHome} />;
       case "calendario": return <Calendario back={goHome} />;
       case "chat": return <Chat back={goHome} />;
+      case "telas": return <TodasTelas back={voltar} abrir={openGallery} />;
     }
   };
 
-  const darkStatus = screen === "splash";
+  // Largura máxima do conteúdo: login/cadastro ficam estreitos (formulário),
+  // o resto usa uma coluna confortável de ler no desktop, e a splash ocupa tudo.
+  const largura = screen === "splash" ? "" : screen === "login" || screen === "cadastro" ? "max-w-md" : "max-w-3xl";
 
   return (
-    <div className="flex h-full w-full items-center justify-center gap-8 overflow-hidden p-4 lg:p-6">
-      {/* Galeria de telas (presentation) */}
-      <aside className="scroll-area hidden max-h-[85vh] w-56 flex-none self-center overflow-y-auto lg:block">
-        <div className="mb-4 flex items-center gap-2">
-          <div className="grid h-9 w-9 place-items-center rounded-xl text-white" style={{ background: `linear-gradient(135deg, ${BLUE}, ${TEAL})` }}><IconGrad size={20} strokeWidth={2} /></div>
-          <div><p className="text-[15px] font-extrabold leading-none" style={{ color: INK }}>SE Educa</p><p className="text-[10.5px]" style={{ color: INK_SOFT }}>Protótipo · 46 telas</p></div>
-        </div>
-        <div className="space-y-4">
-          {GALLERY.map((g) => (
-            <div key={g.grupo}>
-              <p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-wide" style={{ color: "#94a3b8" }}>{g.grupo}</p>
-              <div className="space-y-1">
-                {g.itens.map((it) => {
-                  const on = screen === it.id;
-                  return (
-                    <button key={it.id} onClick={() => openGallery(it.id)} className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[12.5px] font-medium transition" style={on ? { background: BLUE, color: "#fff" } : { color: INK }}>
-                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: on ? "#fff" : "#cbd5e1" }} />{it.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </aside>
-
-      {/* Tela */}
-      <div className={`device-screen relative flex h-full w-full max-w-[520px] flex-none flex-col overflow-hidden rounded-3xl shadow-xl ${a11y.animacoes ? "" : "no-anim"}`} style={{ filter: a11y.contraste ? "contrast(1.14) saturate(1.05)" : undefined }}>
-        <StatusBar dark={darkStatus} />
-        <div className="flex min-h-0 flex-1 flex-col" style={{ zoom: a11y.fontScale } as React.CSSProperties}>{renderScreen()}</div>
-        {showNav && <BottomNav active={tab} onChange={onTab} badge={3} />}
-      </div>
+    <div className={`flex h-full w-full flex-col bg-[color:var(--color-surface)] md:flex-row ${a11y.animacoes ? "" : "no-anim"}`} style={{ filter: a11y.contraste ? "contrast(1.14) saturate(1.05)" : undefined }}>
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className={`mx-auto flex min-h-0 w-full flex-1 flex-col ${largura}`} style={{ zoom: a11y.fontScale } as React.CSSProperties}>{renderScreen()}</div>
+      </main>
+      {showNav && <BottomNav active={tab} onChange={onTab} badge={3} />}
     </div>
   );
 }

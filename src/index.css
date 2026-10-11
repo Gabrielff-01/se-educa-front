@@ -41,42 +41,6 @@ body {
   height: 0;
 }
 
-/* iPhone 15 Pro Max device frame */
-.device {
-  width: 430px;
-  height: 932px;
-  border-radius: 60px;
-  background: #05070a;
-  padding: 12px;
-  box-shadow:
-    0 2px 0 2px #1c2530 inset,
-    0 40px 80px -20px rgba(15, 33, 53, 0.45),
-    0 12px 30px -10px rgba(15, 33, 53, 0.35);
-  position: relative;
-  flex: none;
-}
-.device-screen {
-  width: 100%;
-  height: 100%;
-  border-radius: 48px;
-  overflow: hidden;
-  background: var(--color-surface);
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-.dynamic-island {
-  position: absolute;
-  top: 22px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 118px;
-  height: 34px;
-  background: #05070a;
-  border-radius: 20px;
-  z-index: 50;
-}
-
 .card {
   background: #ffffff;
   border-radius: 20px;
