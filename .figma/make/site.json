@@ -1,5 +1,7 @@
 {
-  "description": "A comprehensive educational platform connecting students, teachers, schools, and education authorities in Brazil, offering easy access to grades, attendance, and resources.",
+  "title": "SE Educa",
+  "description": "Plataforma educacional de Sergipe que conecta alunos, responsáveis, professores, escolas e a Secretaria de Educação, com acesso fácil a notas, frequência e serviços.",
+  "language": "pt-BR",
   "robots": {
     "index": false
   },
