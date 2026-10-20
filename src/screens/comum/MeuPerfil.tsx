@@ -1,35 +1,90 @@
+/* Meu perfil: quem está logado, atalhos, dados cadastrais e privacidade.
+   Dados reais: o usuário logado (vem do login) e, para aluno e responsável, /api/meus-alunos/
+   (o aluno vê código, turma e escola; o responsável vê os filhos).
+   Sem login (galeria "Todas as telas") mostra um exemplo. */
+
 import { useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Pill } from "@/components/Pill";
 import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TopBar } from "@/components/TopBar";
+import { EstadoApi } from "@/components/Form";
 import { IconChat, IconChevron, IconEdit, IconGrid, IconLayers, IconLogout, IconShield } from "@/components/icons";
 import { ALUNO } from "@/data/aluno";
 import { PERFIS } from "@/data/perfis";
+import { useApi } from "@/hooks/useApi";
+import { dataBR } from "@/lib/formato";
+import type { MeuAluno, Usuario } from "@/lib/tipos";
 import type { ScreenId } from "@/routes";
-import { BLUE, GREEN, INK, INK_SOFT, RED } from "@/theme/colors";
+import { BLUE, GREEN, INDIGO, INK, INK_SOFT, RED } from "@/theme/colors";
 import type { Perfil } from "@/types";
 
-export function MeuPerfil({ back, onLogout, perfil, nav }: { back: () => void; onLogout: () => void; perfil: Perfil; nav: (s: ScreenId) => void }) {
+export function MeuPerfil({ back, onLogout, perfil, nav, usuario }: { back: () => void; onLogout: () => void; perfil: Perfil; nav: (s: ScreenId) => void; usuario: Usuario | null }) {
   const [privacidade, setPrivacidade] = useState({ dados: true, notif: true, localizacao: false });
   const nomeMap: Record<Perfil, string> = { aluno: ALUNO.nome, responsavel: "Regina Nunes", professor: "Prof. Carlos Menezes", escola: "Diretora Márcia Lopes", secretaria: "Gestor Rafael Andrade" };
-  const info = [
-    { l: "CPF", v: "***.456.789-**" },
-    { l: "E-mail", v: "ana.nunes@edu.se.gov.br" },
-    { l: "Telefone", v: "(79) 9 9XXX-XX12" },
-    { l: "Data de nascimento", v: "14/03/2010" },
-  ];
+  // Logado pela API: nome e dados reais. Sem login (galeria de telas): dados de exemplo.
+  const nome = usuario?.nome ?? nomeMap[perfil];
+  // Aluno: ele mesmo. Responsável: os filhos. (Só busca quando é um desses perfis.)
+  const daFamilia = usuario !== null && (usuario.perfil === "aluno" || usuario.perfil === "responsavel");
+  const alunos = useApi<MeuAluno[]>(daFamilia ? "/api/meus-alunos/" : null);
+  const eu = usuario?.perfil === "aluno" ? alunos.dados?.[0] ?? null : null;
+  const detalhe = !usuario ? null
+    : eu ? [eu.turma_nome, eu.escola_nome].filter(Boolean).join(" · ") || usuario.perfil_nome
+    : [usuario.perfil_nome, usuario.setor_nome, usuario.escola_nome].filter(Boolean).join(" · ");
+  const info = usuario
+    ? [
+      { l: "Usuário", v: usuario.username },
+      { l: "E-mail", v: usuario.email || "não informado" },
+      ...(eu ? [
+        { l: "Código do aluno", v: eu.codigo },
+        { l: "Data de nascimento", v: dataBR(eu.data_nascimento) },
+        { l: "Turma", v: eu.turma_nome ?? "sem turma" },
+        { l: "Escola", v: eu.escola_nome ?? "—" },
+        ...(eu.programa_nome ? [{ l: "Programa social", v: eu.programa_nome }] : []),
+      ] : []),
+    ]
+    // Galeria sem login: dados de exemplo
+    : [
+      { l: "CPF", v: "***.456.789-**" },
+      { l: "E-mail", v: "ana.nunes@edu.se.gov.br" },
+      { l: "Data de nascimento", v: "14/03/2010" },
+    ];
   return (
     <>
       <TopBar title="Perfil" onBack={back} accent={BLUE} right={<button onClick={() => nav("configuracoes")} className="grid h-9 w-9 place-items-center rounded-full bg-white shadow-sm" style={{ color: BLUE }}><IconEdit size={18} /></button>} />
       <Screen>
         <div className="card flex flex-col items-center p-5">
-          <Avatar name={nomeMap[perfil]} color={PERFIS.find((p) => p.id === perfil)!.cor} size={72} />
-          <h2 className="mt-3 text-[17px] font-bold" style={{ color: INK }}>{nomeMap[perfil]}</h2>
-          <p className="text-[12.5px]" style={{ color: INK_SOFT }}>{perfil === "aluno" ? `${ALUNO.turma} · ${ALUNO.escola}` : perfil === "responsavel" ? `Responsável · ${ALUNO.nome}` : "Rede Municipal de Aracaju"}</p>
+          <Avatar name={nome} color={PERFIS.find((p) => p.id === perfil)!.cor} size={72} />
+          <h2 className="mt-3 text-[17px] font-bold" style={{ color: INK }}>{nome}</h2>
+          <p className="text-[12.5px]" style={{ color: INK_SOFT }}>{detalhe ?? (perfil === "aluno" ? `${ALUNO.turma} · ${ALUNO.escola}` : perfil === "responsavel" ? `Responsável · ${ALUNO.nome}` : "Rede Estadual de Sergipe")}</p>
           <div className="mt-3"><Pill color={PERFIS.find((p) => p.id === perfil)!.cor}>{PERFIS.find((p) => p.id === perfil)!.label}</Pill></div>
         </div>
+
+        {usuario?.perfil === "responsavel" && (
+          <>
+            <SectionHeader title="Meus filhos" />
+            <EstadoApi carregando={alunos.carregando} erro={alunos.erro} onRetry={alunos.recarregar}>
+              {(alunos.dados ?? []).length === 0 ? (
+                <p className="text-[12.5px]" style={{ color: INK_SOFT }}>Nenhum aluno ligado a esta conta. Procure a secretaria da escola.</p>
+              ) : (
+                <div className="card divide-y divide-[color:var(--color-line)]">
+                  {(alunos.dados ?? []).map((a) => (
+                    <div key={a.id} className="flex items-center gap-3 px-4 py-3">
+                      <Avatar name={a.nome} color={INDIGO} size={38} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-semibold" style={{ color: INK }}>{a.nome}</p>
+                        <p className="truncate text-[11.5px]" style={{ color: INK_SOFT }}>{a.turma_nome ?? "Sem turma"} · {a.escola_nome ?? "sem escola"}</p>
+                        <p className="text-[11px]" style={{ color: INK_SOFT }}>Código {a.codigo}{a.programa_nome ? ` · ${a.programa_nome}` : ""}</p>
+                      </div>
+                      {a.parentesco && <Pill color={INDIGO}>{a.parentesco}</Pill>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </EstadoApi>
+          </>
+        )}
 
         <SectionHeader title="Preferências" />
         <div className="card divide-y divide-[color:var(--color-line)]">
@@ -47,7 +102,7 @@ export function MeuPerfil({ back, onLogout, perfil, nav }: { back: () => void; o
         </div>
         <SectionHeader title="Dados cadastrais" />
         <div className="card divide-y divide-[color:var(--color-line)]">
-          {info.map((i) => (<div key={i.l} className="flex items-center justify-between px-4 py-3"><span className="text-[12.5px]" style={{ color: INK_SOFT }}>{i.l}</span><span className="text-[13px] font-semibold" style={{ color: INK }}>{i.v}</span></div>))}
+          {info.map((i) => (<div key={i.l} className="flex items-center justify-between gap-3 px-4 py-3"><span className="flex-none text-[12.5px]" style={{ color: INK_SOFT }}>{i.l}</span><span className="min-w-0 truncate text-right text-[13px] font-semibold" style={{ color: INK }}>{i.v}</span></div>))}
         </div>
         <SectionHeader title="Privacidade e LGPD" />
         <div className="card divide-y divide-[color:var(--color-line)]">
