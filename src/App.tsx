@@ -22,10 +22,13 @@ import { Calendario } from "@/screens/comum/Calendario";
 import { Chat } from "@/screens/comum/Chat";
 import { Comunicados } from "@/screens/comum/Comunicados";
 import { Configuracoes } from "@/screens/comum/Configuracoes";
+import { HistoricoAlteracoes } from "@/screens/comum/HistoricoAlteracoes";
 import { MeuPerfil } from "@/screens/comum/MeuPerfil";
 import { Notificacoes } from "@/screens/comum/Notificacoes";
+import { Pedidos } from "@/screens/comum/Pedidos";
 import { Tarefas } from "@/screens/comum/Tarefas";
 import { TodasTelas } from "@/screens/comum/TodasTelas";
+import { AdmAlunos } from "@/screens/escola/AdmAlunos";
 import { AdmBoletins } from "@/screens/escola/AdmBoletins";
 import { AdmDiario } from "@/screens/escola/AdmDiario";
 import { AdmHorarios } from "@/screens/escola/AdmHorarios";
@@ -49,15 +52,33 @@ import { SecPedagogico } from "@/screens/secretaria/SecPedagogico";
 import { SecPesquisas } from "@/screens/secretaria/SecPesquisas";
 import { SecRegional } from "@/screens/secretaria/SecRegional";
 import { SecretariaHome } from "@/screens/secretaria/SecretariaHome";
+import { DedAtos } from "@/screens/setores/DedAtos";
+import { DedMatrizes } from "@/screens/setores/DedMatrizes";
+import { DedOfertas } from "@/screens/setores/DedOfertas";
+import { DiesCalendario } from "@/screens/setores/DiesCalendario";
+import { DiesCursos } from "@/screens/setores/DiesCursos";
+import { DiesEscolas } from "@/screens/setores/DiesEscolas";
+import { DiesTurmas } from "@/screens/setores/DiesTurmas";
+import { RhLotacoes } from "@/screens/setores/RhLotacoes";
+import { RhAfastamentos } from "@/screens/setores/RhAfastamentos";
+import { RhCarencias } from "@/screens/setores/RhCarencias";
+import { RhPainel } from "@/screens/setores/RhPainel";
+import { RhProfessores } from "@/screens/setores/RhProfessores";
 import { Acompanhamento } from "@/screens/servicos/Acompanhamento";
 import { Escolas } from "@/screens/servicos/Escolas";
 import { Matricula } from "@/screens/servicos/Matricula";
 import { SecretariaVirtual } from "@/screens/servicos/SecretariaVirtual";
+import { useApi } from "@/hooks/useApi";
+import { UsuarioContext } from "@/hooks/useUsuario";
+import { logout, sessaoAtual } from "@/lib/api";
+import type { Notificacao, Usuario } from "@/lib/tipos";
 import type { A11y, EscCtx, Perfil, TabId } from "@/types";
 
 export default function App() {
+  // Quem está logado (vem do login na API e fica guardado no navegador).
+  const [usuario, setUsuario] = useState<Usuario | null>(() => sessaoAtual()?.usuario ?? null);
   const [screen, setScreen] = useState<ScreenId>(() => screenFromHash() ?? "splash");
-  const [perfil, setPerfil] = useState<Perfil>(() => PERFIL_BY_SCREEN[screenFromHash() ?? "splash"] ?? "aluno");
+  const [perfil, setPerfil] = useState<Perfil>(() => PERFIL_BY_SCREEN[screenFromHash() ?? "splash"] ?? usuario?.perfil ?? "aluno");
   const [tab, setTab] = useState<TabId>("inicio");
   const [a11y, setA11y] = useState<A11y>({ fontScale: 1, contraste: false, animacoes: true });
 
@@ -96,12 +117,24 @@ export default function App() {
     window.addEventListener("popstate", onVoltar);
     return () => window.removeEventListener("popstate", onVoltar);
   }, []);
+  const entrar = (u: Usuario) => { setUsuario(u); setPerfil(u.perfil); setScreen(HOME_BY_PERFIL[u.perfil]); setTab("inicio"); };
+  const sair = () => { logout(); setUsuario(null); setScreen("login"); };
+  // Depois da splash: quem já está logado vai direto pra tela inicial do seu perfil.
+  const depoisDaSplash = () => (usuario ? entrar(usuario) : setScreen("login"));
+
+  // Número no sino: quantas notificações novas. Busca de novo a cada troca de tela
+  // (assim, depois de abrir as notificações, o número some).
+  const notificacoes = useApi<Notificacao[]>(usuario ? "/api/notificacoes/" : null);
+  const recarregarNotificacoes = notificacoes.recarregar;
+  useEffect(() => { recarregarNotificacoes(); }, [screen, recarregarNotificacoes]);
+  const naoLidas = (notificacoes.dados ?? []).filter((n) => n.nova).length;
+
   const voltar = () => (window.history.length > 1 ? window.history.back() : setScreen("login"));
 
   const renderScreen = () => {
     switch (screen) {
-      case "splash": return <Splash go={() => setScreen("login")} />;
-      case "login": return <Login onEnter={(p) => { setPerfil(p); setScreen(HOME_BY_PERFIL[p]); setTab("inicio"); }} onCadastro={() => setScreen("cadastro")} onTelas={() => setScreen("telas")} />;
+      case "splash": return <Splash go={depoisDaSplash} />;
+      case "login": return <Login onEnter={entrar} onCadastro={() => setScreen("cadastro")} onTelas={() => setScreen("telas")} />;
       case "cadastro": return <Cadastro back={() => setScreen("login")} />;
       case "alunoHome": return <AlunoHome nav={nav} />;
       case "responsavelHome": return <ResponsavelHome nav={nav} />;
@@ -116,18 +149,18 @@ export default function App() {
       case "escolas": return <Escolas key={"l" + escCtx} back={goHome} perfil={perfil} ctx={escCtx} />;
       case "acompanhamento": return <Acompanhamento back={() => setScreen("secretariaVirtual")} />;
       case "secretariaVirtual": return <SecretariaVirtual back={goHome} nav={nav} />;
-      case "notificacoes": return perfil === "secretaria" ? <NotificacoesSecretaria back={goHome} nav={nav} /> : <Notificacoes back={goHome} />;
-      case "perfil": return <MeuPerfil back={goHome} onLogout={() => setScreen("login")} perfil={perfil} nav={nav} />;
-      case "configuracoes": return <Configuracoes back={goHome} a11y={a11y} setA11y={setA11y} onLogout={() => setScreen("login")} />;
+      case "notificacoes": return perfil === "secretaria" ? <NotificacoesSecretaria back={goHome} nav={nav} /> : <Notificacoes back={goHome} nav={nav} />;
+      case "perfil": return <MeuPerfil back={goHome} onLogout={sair} perfil={perfil} nav={nav} usuario={usuario} />;
+      case "configuracoes": return <Configuracoes back={goHome} a11y={a11y} setA11y={setA11y} onLogout={sair} />;
       case "professorHome": return <ProfessorHome nav={nav} />;
       case "profNotas": return <ProfNotas back={goHome} />;
       case "profFrequencia": return <ProfFrequencia back={goHome} />;
       case "profDiario": return <ProfDiario back={goHome} />;
       case "profPlanejamento": return <ProfPlanejamento back={goHome} />;
       case "escolaHome": return <EscolaHome nav={nav} />;
-      case "secretariaHome": return <SecretariaHome nav={nav} abrirEscolas={(c) => { setEscCtx(c); setScreen("escolas"); }} />;
+      case "secretariaHome": return <SecretariaHome nav={nav} usuario={usuario} abrirEscolas={(c) => { setEscCtx(c); setScreen("escolas"); }} />;
       case "admMatriculas": return <AdmMatriculas back={goHome} />;
-      case "admTurmas": return <AdmTurmas back={goHome} />;
+      case "admTurmas": return <AdmTurmas back={goHome} nav={nav} />;
       case "admProfessores": return <AdmProfessores back={goHome} />;
       case "admHorarios": return <AdmHorarios back={goHome} />;
       case "admDiario": return <AdmDiario back={goHome} />;
@@ -147,6 +180,22 @@ export default function App() {
       case "gestorPendencias": return <GestorPendencias back={goHome} />;
       case "calendario": return <Calendario back={goHome} />;
       case "chat": return <Chat back={goHome} />;
+      case "diesEscolas": return <DiesEscolas back={goHome} />;
+      case "diesTurmas": return <DiesTurmas back={goHome} />;
+      case "diesCursos": return <DiesCursos back={goHome} />;
+      case "diesCalendario": return <DiesCalendario back={goHome} />;
+      case "dedAtos": return <DedAtos back={goHome} />;
+      case "dedOfertas": return <DedOfertas back={goHome} />;
+      case "dedMatrizes": return <DedMatrizes back={goHome} />;
+      case "rhProfessores": return <RhProfessores back={goHome} />;
+      case "rhLotacoes": return <RhLotacoes back={goHome} />;
+      case "rhPainel": return <RhPainel back={goHome} nav={nav} />;
+      case "rhCarencias": return <RhCarencias back={goHome} />;
+      case "rhAfastamentos": return <RhAfastamentos back={goHome} />;
+      case "admAlunos": return <AdmAlunos back={goHome} />;
+      case "historicoAlteracoes": return <HistoricoAlteracoes back={goHome} />;
+      case "escPedidos": return <Pedidos back={goHome} lado="escola" />;
+      case "diesPedidos": return <Pedidos back={goHome} lado="dies" />;
       case "telas": return <TodasTelas back={voltar} abrir={openGallery} />;
     }
   };
@@ -156,11 +205,13 @@ export default function App() {
   const largura = screen === "splash" ? "" : screen === "login" || screen === "cadastro" ? "max-w-md" : "max-w-3xl";
 
   return (
+    <UsuarioContext.Provider value={usuario}>
     <div className={`flex h-full w-full flex-col bg-[color:var(--color-surface)] md:flex-row ${a11y.animacoes ? "" : "no-anim"}`} style={{ filter: a11y.contraste ? "contrast(1.14) saturate(1.05)" : undefined }}>
       <main className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className={`mx-auto flex min-h-0 w-full flex-1 flex-col ${largura}`} style={{ zoom: a11y.fontScale } as React.CSSProperties}>{renderScreen()}</div>
       </main>
-      {showNav && <BottomNav active={tab} onChange={onTab} badge={3} />}
+      {showNav && <BottomNav active={tab} onChange={onTab} badge={naoLidas} />}
     </div>
+    </UsuarioContext.Provider>
   );
 }
