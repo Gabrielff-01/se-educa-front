@@ -1,10 +1,12 @@
 /* Supervisão do diário: para cada professor x turma x matéria, a última aula registrada,
    quantas aulas da grade ficaram sem registro e como estão as notas da unidade.
    Dados: GET /api/escola/diario/ (o "status" vem pronto da API: Em dia / Pendente / Atrasado;
-   nas notas também "Em andamento" = a unidade atual ainda não venceu, então não é pendência). */
+   nas notas também "Em andamento" = a unidade atual ainda não venceu, então não é pendência).
+   "Ver aulas" abre o diário sucinto daquela turma · matéria (GET /api/aulas/?turma&materia), só leitura. */
 
 import { useState } from "react";
 import { Avatar } from "@/components/Avatar";
+import { DiarioSucinto } from "@/components/DiarioSucinto";
 import { EstadoApi } from "@/components/Form";
 import { EmptyState } from "@/components/EmptyState";
 import { Screen } from "@/components/Screen";
@@ -12,7 +14,7 @@ import { TopBar } from "@/components/TopBar";
 import { IconCheck } from "@/components/icons";
 import { useApi } from "@/hooks/useApi";
 import { dataBR } from "@/lib/formato";
-import type { SituacaoDiario } from "@/lib/tipos";
+import type { Aula, SituacaoDiario } from "@/lib/tipos";
 import { AMBER, BLUE, GREEN, INK, INK_SOFT, RED, VIOLET } from "@/theme/colors";
 
 const corDo = (status: string) => (status === "Em dia" ? GREEN : status === "Em andamento" ? BLUE : status === "Pendente" ? AMBER : RED);
@@ -22,6 +24,7 @@ const temPendencia = (d: SituacaoDiario) => d.status_diario !== "Em dia" || nota
 export function AdmDiario({ back }: { back: () => void }) {
   const diario = useApi<SituacaoDiario[]>("/api/escola/diario/");
   const [filtro, setFiltro] = useState<"Atrasados" | "Todos">("Atrasados");
+  const [vendo, setVendo] = useState<number | null>(null); // lotação com as aulas abertas
   const todos = diario.dados ?? [];
   const lista = filtro === "Todos" ? todos : todos.filter(temPendencia);
   const conta = (status: string) => todos.filter((d) => d.status_diario === status).length;
@@ -44,7 +47,7 @@ export function AdmDiario({ back }: { back: () => void }) {
             ))}
           </div>
           {lista.length === 0 ? <EmptyState title="Tudo em dia" text={filtro === "Atrasados" ? "Nenhum diário ou nota pendente." : "Nenhum professor lotado na escola."} icon={<IconCheck size={26} />} /> : (
-            <div className="mt-3 grid gap-2.5 lg:grid-cols-2">
+            <div className="mt-3 grid items-start gap-2.5 lg:grid-cols-2">
               {lista.map((d) => (
                 <div key={d.lotacao} className="card p-3.5">
                   <div className="flex items-center gap-3">
@@ -55,7 +58,11 @@ export function AdmDiario({ back }: { back: () => void }) {
                     <Quadro titulo="Diário" status={d.status_diario} detalhe={!d.tem_grade ? "sem horário na grade" : d.aulas_sem_registro ? `${d.aulas_sem_registro} aula(s) sem registro desde ${dataBR(d.sem_registro_desde)}` : "nenhuma aula sem registro"} />
                     <Quadro titulo={`Notas · ${d.unidade_notas ?? "–"}ª unid.`} status={d.status_notas} detalhe={`${d.notas_lancadas} de ${d.alunos} lançadas`} />
                   </div>
-                  <p className="mt-2 text-[10.5px]" style={{ color: INK_SOFT }}>Última aula registrada: {d.ultima_aula ? dataBR(d.ultima_aula) : "nenhuma"}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <p className="flex-1 text-[10.5px]" style={{ color: INK_SOFT }}>Última aula registrada: {d.ultima_aula ? dataBR(d.ultima_aula) : "nenhuma"}</p>
+                    <button onClick={() => setVendo(vendo === d.lotacao ? null : d.lotacao)} className="text-[11.5px] font-semibold" style={{ color: VIOLET }}>{vendo === d.lotacao ? "Fechar" : "Ver aulas"}</button>
+                  </div>
+                  {vendo === d.lotacao && <div className="mt-2"><AulasDaTurma turma={d.turma} materia={d.materia} /></div>}
                 </div>
               ))}
             </div>
@@ -63,6 +70,30 @@ export function AdmDiario({ back }: { back: () => void }) {
         </EstadoApi>
       </Screen>
     </>
+  );
+}
+
+/* Diário sucinto de uma turma · matéria. Tocar numa aula mostra o conteúdo inteiro e quem faltou. */
+function AulasDaTurma({ turma, materia }: { turma: number; materia: number }) {
+  const aulas = useApi<Aula[]>(`/api/aulas/?turma=${turma}&materia=${materia}`);
+  const [aberta, setAberta] = useState<number | null>(null);
+  return (
+    <EstadoApi carregando={aulas.carregando} erro={aulas.erro} onRetry={aulas.recarregar}>
+      {(aulas.dados ?? []).length === 0 ? <p className="text-[12px]" style={{ color: INK_SOFT }}>Nenhuma aula registrada ainda.</p> : (
+        <DiarioSucinto
+          aulas={aulas.dados ?? []}
+          cor={VIOLET}
+          aberta={aberta}
+          onTocar={(a) => setAberta(aberta === a.id ? null : a.id)}
+          detalhe={(a) => (
+            <p className="text-[12px] leading-snug" style={{ color: INK }}>
+              {a.conteudo || "Sem conteúdo registrado."}
+              <span className="block text-[11px]" style={{ color: INK_SOFT }}>{a.quantidade} aula(s) · {a.total_alunos - a.presentes} falta(s) · {a.professor_nome}</span>
+            </p>
+          )}
+        />
+      )}
+    </EstadoApi>
   );
 }
 

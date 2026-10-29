@@ -22,6 +22,8 @@ export type Opcao = { valor: string; nome: string };
 
 export type Opcoes = {
   dependencias: Opcao[];
+  zonas: Opcao[];
+  funcoes: Opcao[];
   areas: Opcao[];
   turnos: Opcao[];
   tipos_ato: Opcao[];
@@ -45,14 +47,40 @@ export type Escola = {
   id: number;
   nome: string;
   codigo_inep: string;
+  cnpj: string;
+  cnpj_formatado: string;
   dependencia: string;
   dependencia_nome: string;
   regional: number;
   regional_nome: string;
-  municipio: string;
-  bairro: string;
+  telefone: string;
+  email: string;
+  numero_salas: number | null;
+  zona: string;
+  zona_nome: string;
+  comodato: boolean;
   endereco: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  municipio: string;
+  cep: string;
+  cep_formatado: string;
   ativa: boolean;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+/* Ficha da escola (GET /api/escolas/ID/ficha/), no modelo do site da SEDUC. */
+export type FichaEscola = {
+  escola: Escola;
+  ano: number;
+  resumo: { turmas: number; alunos: number; vagas: number; servidores: number };
+  turmas: { id: number; curso_nome: string; serie_nome: string; letra: string; turno_nome: string; sala: string; alunos: number; capacidade: number }[];
+  equipe_diretiva: { funcao_nome: string; nome: string; portaria: string }[];
+  professores: { nome: string; vinculo_nome: string; horas: number; aulas: number; afastado: boolean }[];
+  por_vinculo: { vinculo_nome: string; total: number }[];
+  resolucoes: { tipo_nome: string; curso_nome: string | null; numero: string; orgao_emissor: string; data_publicacao: string; validade: string | null; vigente: boolean }[];
 };
 
 export type Serie = { id: number; curso: number; curso_nome: string; nome: string; ordem: number };
@@ -158,6 +186,76 @@ export type Professor = {
   aulas_ano_atual: number;
   afastamento_atual: { tipo_nome: string; fim: string } | null;
 };
+
+/* Em qual escola o professor trabalha (o RH aloca) e a função dele lá (a escola define). */
+export type Alocacao = {
+  id: number;
+  professor: number;
+  professor_nome: string;
+  carga_professor: number;
+  vinculo_nome: string;
+  escola: number;
+  escola_nome: string;
+  horas_semanais: number;
+  horas_nome: string;
+  portaria: string;
+  desde: string;
+  funcao: string;
+  funcao_nome: string;
+  portaria_funcao: string;
+  limite_aulas: number;
+  aulas_ano_atual: number;
+  afastamento_atual: { tipo_nome: string; fim: string } | null;
+};
+
+/* GET /api/escola/professores/: cada professor alocado na escola, com as turmas dele. */
+export type ProfessorDaEscola = {
+  id: number;
+  alocacao: number;
+  nome: string;
+  carga: number;
+  horas_na_escola: number;
+  vinculo_nome: string;
+  funcao: string;
+  funcao_nome: string;
+  portaria_funcao: string;
+  materias: string[];
+  turmas: string[];
+  aulas_na_escola: number;
+  limite_aulas: number;
+  lotacoes: { id: number; turma: number; turma_nome: string; materia: number; materia_nome: string; aulas_semanais: number; no_quadro: number }[];
+  afastamento: { tipo_nome: string; fim: string } | null;
+};
+
+/* GET /api/documentos/na-chamada/: atestado ou justificativa aceitos que cobrem o dia da chamada. */
+/* GET /api/escolas/rede/: uma escola na tela "Escolas da rede" (lista e mapa).
+   alunos, turmas e servidores só vêm para a gestão (Secretaria e escolas). */
+export type EscolaDaRede = {
+  id: number;
+  nome: string;
+  dependencia_nome: string;
+  regional_nome: string;
+  zona: string;
+  zona_nome: string;
+  endereco: string;
+  numero: string;
+  bairro: string;
+  municipio: string;
+  cep_formatado: string;
+  telefone: string;
+  email: string;
+  latitude: number | null;
+  longitude: number | null;
+  cursos: string[];
+  turnos: string[];
+  vagas: number;
+  vagas_por_serie: { curso_nome: string; serie_nome: string; turno_nome: string; vagas: number }[];
+  turmas?: number;
+  alunos?: number;
+  servidores?: number;
+};
+
+export type DocumentoNaChamada = { aluno: number; tipo: string; tipo_nome: string; data_inicio: string; data_fim: string };
 
 export type Lotacao = {
   id: number;
@@ -475,4 +573,31 @@ export type Pedido = {
   atualizada_em: string;
   mensagens: MensagemPedido[];
   ultima_fala: "escola" | "dies" | "sistema" | null;
+};
+
+/* Documento que o aluno ou o responsável mandou para a escola (atestado, papéis da matrícula...). */
+export type Documento = {
+  id: number;
+  aluno: number;
+  aluno_nome: string;
+  turma_nome: string | null;
+  escola: number;
+  escola_nome: string;
+  tipo: string;
+  tipo_nome: string;
+  descricao: string;
+  data_inicio: string | null;
+  data_fim: string | null;
+  faltas_no_periodo: number | null;
+  nome_arquivo: string;
+  tipo_arquivo: string;
+  tamanho: number;
+  status: "aguardando" | "aceito" | "recusado";
+  status_nome: string;
+  resposta: string;
+  enviado_por_nome: string;
+  enviado_em: string;
+  analisado_por_nome: string | null;
+  analisado_em: string | null;
+  pode_cancelar: boolean;
 };
