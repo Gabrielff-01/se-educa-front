@@ -11,7 +11,7 @@ import { EstadoApi } from "@/components/Form";
 import { Pill } from "@/components/Pill";
 import { SectionHeader } from "@/components/SectionHeader";
 import { SeletorAluno } from "@/components/SeletorAluno";
-import { IconBell, IconBook, IconBus, IconCalendar, IconChat, IconCheck, IconClock, IconDoc, IconEdit, IconFood, IconGrad, IconGrid, IconPin, IconStar } from "@/components/icons";
+import { IconBell, IconBook, IconBus, IconCalendar, IconChat, IconCheck, IconClock, IconDoc, IconEdit, IconFood, IconGrad, IconGrid, IconPin, IconSend, IconStar } from "@/components/icons";
 import type { IconProps } from "@/components/icons";
 import { useAlunoEscolhido } from "@/hooks/useAlunoEscolhido";
 import { useApi } from "@/hooks/useApi";
@@ -57,6 +57,7 @@ export function AlunoHome({ nav }: { nav: (s: ScreenId) => void }) {
     { label: "Escolas", Icon: IconGrad, cor: TEAL, s: "escolas" },
     { label: "Biblioteca Virtual", Icon: IconBook, cor: INDIGO, s: "biblioteca" },
     { label: "Secretaria", Icon: IconGrid, cor: BLUE, s: "secretariaVirtual" },
+    { label: "Enviar documentos", Icon: IconSend, cor: TEAL, s: "documentos" },
   ];
 
   // Resumo de notas e frequência

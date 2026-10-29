@@ -1,5 +1,5 @@
 /* Grade de horários de cada turma (segunda a sexta). A escola põe e tira aulas da grade.
-   Cada aula da grade é uma "lotação" (professor + matéria na turma, feita pelo RH) num dia e hora.
+   Cada aula da grade é uma "lotação" (professor + matéria na turma, definida em Professores e funções) num dia e hora.
    Dados: GET /api/turmas/?escola=ID, GET/POST/DELETE /api/horarios/ (?turma=ID) e
           /api/escola/diario/ (as lotações da turma, com quantas aulas por semana cada matéria tem). */
 
@@ -138,7 +138,7 @@ export function AdmHorarios({ back }: { back: () => void }) {
 
               <div className="card mt-3 p-3.5">
                 <p className="text-[13px] font-bold" style={{ color: INK }}>Aulas por matéria · {grade.length} de {previstas} na grade</p>
-                {lotacoes.length === 0 ? <p className="mt-1 text-[12px]" style={{ color: INK_SOFT }}>Nenhum professor lotado nesta turma (a lotação é feita pelo RH).</p> : (
+                {lotacoes.length === 0 ? <p className="mt-1 text-[12px]" style={{ color: INK_SOFT }}>Nenhum professor nesta turma. Dê a turma a um professor em Professores e funções.</p> : (
                   <div className="mt-2 space-y-1.5">
                     {lotacoes.map((l) => {
                       const usadas = naGrade(l.lotacao);

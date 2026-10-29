@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { EstadoApi } from "@/components/Form";
 import { Pill } from "@/components/Pill";
 import { SectionHeader } from "@/components/SectionHeader";
-import { IconAlert, IconBell, IconBook, IconBus, IconCalendar, IconChat, IconCheck, IconClock, IconDoc, IconEdit, IconFood, IconGrid, IconPin, IconStar, IconUsers } from "@/components/icons";
+import { IconAlert, IconBell, IconBook, IconBus, IconCalendar, IconChat, IconCheck, IconClock, IconDoc, IconEdit, IconFood, IconGrid, IconPin, IconSend, IconStar, IconUsers } from "@/components/icons";
 import type { IconProps } from "@/components/icons";
 import { useAlunoEscolhido } from "@/hooks/useAlunoEscolhido";
 import { useApi } from "@/hooks/useApi";
@@ -40,6 +40,7 @@ export function ResponsavelHome({ nav }: { nav: (s: ScreenId) => void }) {
     { label: "Histórico", Icon: IconBook, cor: INDIGO, s: "historico" },
     { label: "Comunicação", Icon: IconChat, cor: PINK, s: "chat" },
     { label: "Secretaria", Icon: IconGrid, cor: BLUE, s: "secretariaVirtual" },
+    { label: "Enviar documentos", Icon: IconSend, cor: TEAL, s: "documentos" },
     { label: "Locais de estudo", Icon: IconPin, cor: RED, s: "mapaEstudos" },
     { label: "Transporte", Icon: IconBus, cor: GREEN, s: "transporte" },
     { label: "Merenda", Icon: IconFood, cor: AMBER, s: "merenda" },

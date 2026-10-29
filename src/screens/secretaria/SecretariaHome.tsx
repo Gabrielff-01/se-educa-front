@@ -39,7 +39,7 @@ const MODULOS_SETOR: Record<Setor, { titulo: string; cor: string; itens: { t: st
   rh: { titulo: "RH · Professores", cor: GREEN, itens: [
     { t: "Painel do RH", d: "Quadro, limites e carências", Icon: IconChart, s: "rhPainel" },
     { t: "Professores", d: "Matrícula, CPF e carga", Icon: IconUser, s: "rhProfessores" },
-    { t: "Lotação", d: "Quem dá aula em qual turma", Icon: IconUsers, s: "rhLotacoes" },
+    { t: "Alocação", d: "Em qual escola cada professor trabalha", Icon: IconUsers, s: "rhLotacoes" },
     { t: "Carências", d: "Aulas sem professor", Icon: IconAlert, s: "rhCarencias" },
     { t: "Afastamentos", d: "Licenças e substituições", Icon: IconCalendar, s: "rhAfastamentos" },
   ] },

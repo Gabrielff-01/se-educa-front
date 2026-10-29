@@ -1,6 +1,8 @@
 /* Frequência (chamada): o professor escolhe turma · matéria e o dia, marca quem faltou e salva.
    Se a aula daquele dia já foi registrada (GET /api/aulas/?turma&materia&data), ela abre para editar (PATCH);
-   senão, uma aula nova é criada (POST /api/aulas/). Todos começam presentes; "faltas" = ids das matrículas. */
+   senão, uma aula nova é criada (POST /api/aulas/). Todos começam presentes; "faltas" = ids das matrículas.
+   Aluno com atestado médico ou justificativa ACEITOS pela escola que cobrem o dia aparece em amarelo
+   (GET /api/documentos/na-chamada/?turma&data). É só um aviso: o professor marca P ou F normalmente. */
 
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/Avatar";
@@ -12,9 +14,9 @@ import { TopBar } from "@/components/TopBar";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/api";
 import { dataBR, hojeISO } from "@/lib/formato";
-import type { Aula, Matricula } from "@/lib/tipos";
+import type { Aula, DocumentoNaChamada, Matricula } from "@/lib/tipos";
 import { CaixaTexto, ComTurmas, Confirmacao, SeletorTurma, nomeDe, useMinhasTurmas } from "@/screens/professor/SeletorTurma";
-import { GREEN, INK, INK_SOFT, RED } from "@/theme/colors";
+import { AMBER, GREEN, INK, INK_SOFT, RED } from "@/theme/colors";
 
 export function ProfFrequencia({ back }: { back: () => void }) {
   const minhas = useMinhasTurmas();
@@ -24,6 +26,8 @@ export function ProfFrequencia({ back }: { back: () => void }) {
   const alunos = useApi<Matricula[]>(turma ? `/api/matriculas/?turma=${turma.turma}&situacao=confirmada` : null);
   const aulasDoDia = useApi<Aula[]>(turma && data ? `/api/aulas/?turma=${turma.turma}&materia=${turma.materia}&data=${data}` : null);
   const existente = aulasDoDia.dados?.[0] ?? null; // só pode haver uma aula por turma, matéria e dia
+  const documentos = useApi<DocumentoNaChamada[]>(turma && data ? `/api/documentos/na-chamada/?turma=${turma.turma}&data=${data}` : null);
+  const documentoDo = new Map((documentos.dados ?? []).map((d) => [d.aluno, d]));
 
   const [faltas, setFaltas] = useState<number[]>([]);
   const [conteudo, setConteudo] = useState("");
@@ -94,10 +98,14 @@ export function ProfFrequencia({ back }: { back: () => void }) {
               <div className="card divide-y divide-[color:var(--color-line)]">
                 {lista.map((m) => {
                   const faltou = faltas.includes(m.id);
+                  const doc = documentoDo.get(m.aluno);
                   return (
-                    <div key={m.id} className="flex items-center gap-3 px-3.5 py-2.5">
-                      <Avatar name={m.aluno_nome} color={faltou ? RED : GREEN} size={32} />
-                      <span className="min-w-0 flex-1 truncate text-[13px] font-medium" style={{ color: INK }}>{m.aluno_nome}</span>
+                    <div key={m.id} className="flex items-center gap-3 px-3.5 py-2.5" style={doc ? { background: AMBER + "1f" } : undefined}>
+                      <Avatar name={m.aluno_nome} color={doc ? AMBER : faltou ? RED : GREEN} size={32} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-medium" style={{ color: INK }}>{m.aluno_nome}</p>
+                        {doc && <p className="truncate text-[11px] font-semibold" style={{ color: "#a16207" }}>{rotuloDocumento(doc)}</p>}
+                      </div>
                       <button onClick={() => alternar(m.id, false)} aria-label={`${m.aluno_nome} presente`} className="rounded-lg px-3 py-1.5 text-[11.5px] font-bold transition" style={!faltou ? { background: GREEN, color: "#fff" } : { background: "#f4f7fb", color: INK_SOFT }}>P</button>
                       <button onClick={() => alternar(m.id, true)} aria-label={`${m.aluno_nome} faltou`} className="rounded-lg px-3 py-1.5 text-[11.5px] font-bold transition" style={faltou ? { background: RED, color: "#fff" } : { background: "#f4f7fb", color: INK_SOFT }}>F</button>
                     </div>
@@ -113,6 +121,12 @@ export function ProfFrequencia({ back }: { back: () => void }) {
       </Screen>
     </>
   );
+}
+
+/* "Atestado médico até 31/10" ou "Falta justificada até 31/10". */
+function rotuloDocumento(d: DocumentoNaChamada) {
+  const ate = `até ${dataBR(d.data_fim).slice(0, 5)}`;
+  return d.tipo === "atestado" ? `Atestado médico ${ate}` : `Falta justificada ${ate}`;
 }
 
 /* Título de seção sem a margem do SectionHeader (aqui ele divide a linha com a etiqueta). */

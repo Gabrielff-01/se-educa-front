@@ -71,7 +71,7 @@ function DetalheTurma({ turma, voltar }: { turma: Turma; voltar: () => void }) {
           <div>
             <SectionHeader title="Professores e matérias" />
             <EstadoApi carregando={diario.carregando} erro={diario.erro} onRetry={diario.recarregar}>
-              {professores.length === 0 ? <p className="card p-4 text-[12.5px]" style={{ color: INK_SOFT }}>Nenhum professor lotado nesta turma. A lotação é feita pelo RH.</p> : (
+              {professores.length === 0 ? <p className="card p-4 text-[12.5px]" style={{ color: INK_SOFT }}>Nenhum professor nesta turma. Dê a turma a um professor em Professores e funções.</p> : (
                 <div className="card divide-y divide-[color:var(--color-line)]">
                   {professores.map((p) => (
                     <div key={p.lotacao} className="flex items-center gap-3 px-3.5 py-3">

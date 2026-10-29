@@ -2,7 +2,8 @@
 
    - API_URL: endereço da API. No seu PC é o runserver; na Vercel vem da variável VITE_API_URL.
    - login(): manda usuário e senha e guarda o "crachá" (token JWT) no navegador.
-   - api(): faz qualquer pedido já mostrando o crachá. Se ele venceu, tenta renovar uma vez. */
+   - api(): faz qualquer pedido já mostrando o crachá. Se ele venceu, tenta renovar uma vez.
+   - baixar(): busca um arquivo (ex.: o PDF de um documento) e devolve ele pronto pra mostrar na tela. */
 
 import type { Usuario } from "@/lib/tipos";
 
@@ -73,7 +74,8 @@ function lerErro(dados: unknown, status: number): ErroApi {
 }
 
 async function pedir(caminho: string, opcoes: RequestInit, token?: string) {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  // Com arquivo (FormData) o navegador monta o cabeçalho sozinho; o resto vai em JSON.
+  const headers: Record<string, string> = opcoes.body instanceof FormData ? {} : { "Content-Type": "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;
   try {
     return await fetch(`${API_URL}${caminho}`, { ...opcoes, headers });
@@ -104,13 +106,10 @@ async function renovar(sessao: Sessao): Promise<Sessao | null> {
   return nova;
 }
 
-/* Pedido genérico. Ex.: api<Escola[]>("/api/escolas/")
-   ou api("/api/turmas/", { method: "POST", body: { escola: 1, ... } }) */
-export async function api<T>(caminho: string, { method = "GET", body }: { method?: string; body?: unknown } = {}): Promise<T> {
+/* Faz o pedido com o crachá; se ele venceu (401), renova uma vez e tenta de novo. */
+async function pedirLogado(caminho: string, opcoes: RequestInit) {
   let sessao = sessaoAtual();
   if (!sessao) throw new ErroApi("Faça login para ver estes dados.", 401);
-  const opcoes: RequestInit = { method, body: body === undefined ? undefined : JSON.stringify(body) };
-
   let resposta = await pedir(caminho, opcoes, sessao.access);
   if (resposta.status === 401) {
     sessao = await renovar(sessao);
@@ -120,9 +119,26 @@ export async function api<T>(caminho: string, { method = "GET", body }: { method
     }
     resposta = await pedir(caminho, opcoes, sessao.access);
   }
+  return resposta;
+}
+
+/* Pedido genérico. Ex.: api<Escola[]>("/api/escolas/")
+   ou api("/api/turmas/", { method: "POST", body: { escola: 1, ... } })
+   Pra mandar arquivo, o body é um FormData (ele vai do jeito que está, sem virar JSON). */
+export async function api<T>(caminho: string, { method = "GET", body }: { method?: string; body?: unknown } = {}): Promise<T> {
+  const corpo = body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body);
+  const resposta = await pedirLogado(caminho, { method, body: corpo });
 
   if (resposta.status === 204) return undefined as T; // DELETE não devolve nada
   const dados = await resposta.json().catch(() => null);
   if (!resposta.ok) throw lerErro(dados, resposta.status);
   return dados as T;
+}
+
+/* Busca um arquivo protegido (precisa do crachá) e devolve um endereço temporário do navegador
+   ("blob:..."), que dá pra usar num <img>, num <iframe> ou num link de baixar. */
+export async function baixar(caminho: string): Promise<string> {
+  const resposta = await pedirLogado(caminho, { method: "GET" });
+  if (!resposta.ok) throw lerErro(await resposta.json().catch(() => null), resposta.status);
+  return URL.createObjectURL(await resposta.blob());
 }

@@ -47,9 +47,9 @@ export function AvisoErro({ texto }: { texto: string }) {
 }
 
 /* Cartão com o formulário de cadastro/edição, com os botões Salvar e Cancelar. */
-export function CartaoForm({ titulo, children, onSalvar, onCancelar, salvando, erro, cor = BLUE }: {
+export function CartaoForm({ titulo, children, onSalvar, onCancelar, salvando, erro, cor = BLUE, rotulo = "Salvar", rotuloSalvando = "Salvando..." }: {
   titulo: string; children: React.ReactNode; onSalvar: () => void; onCancelar: () => void;
-  salvando: boolean; erro?: string; cor?: string;
+  salvando: boolean; erro?: string; cor?: string; rotulo?: string; rotuloSalvando?: string;
 }) {
   return (
     <div className="card mb-3 space-y-3 p-4" style={{ outline: `2px solid ${cor}33` }}>
@@ -63,7 +63,7 @@ export function CartaoForm({ titulo, children, onSalvar, onCancelar, salvando, e
         <button onClick={onCancelar} className="flex-1 rounded-xl border py-2.5 text-[13px] font-semibold" style={{ borderColor: "#e2e8f0", color: INK_SOFT }}>Cancelar</button>
         <button onClick={onSalvar} disabled={salvando} className="flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-[13px] font-semibold text-white disabled:opacity-70" style={{ background: cor }}>
           {salvando && <span className="spinner h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white" />}
-          {salvando ? "Salvando..." : "Salvar"}
+          {salvando ? rotuloSalvando : rotulo}
         </button>
       </div>
     </div>

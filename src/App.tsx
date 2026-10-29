@@ -35,6 +35,7 @@ import { AdmHorarios } from "@/screens/escola/AdmHorarios";
 import { AdmMatriculas } from "@/screens/escola/AdmMatriculas";
 import { AdmProfessores } from "@/screens/escola/AdmProfessores";
 import { AdmTurmas } from "@/screens/escola/AdmTurmas";
+import { DocumentosRecebidos } from "@/screens/escola/DocumentosRecebidos";
 import { EscolaHome } from "@/screens/escola/EscolaHome";
 import { GestorFreqSocial } from "@/screens/escola/GestorFreqSocial";
 import { GestorPendencias } from "@/screens/escola/GestorPendencias";
@@ -65,7 +66,9 @@ import { RhCarencias } from "@/screens/setores/RhCarencias";
 import { RhPainel } from "@/screens/setores/RhPainel";
 import { RhProfessores } from "@/screens/setores/RhProfessores";
 import { Acompanhamento } from "@/screens/servicos/Acompanhamento";
+import { EnviarDocumentos } from "@/screens/servicos/EnviarDocumentos";
 import { Escolas } from "@/screens/servicos/Escolas";
+import { FichaEscola } from "@/screens/comum/FichaEscola";
 import { Matricula } from "@/screens/servicos/Matricula";
 import { SecretariaVirtual } from "@/screens/servicos/SecretariaVirtual";
 import { useApi } from "@/hooks/useApi";
@@ -97,6 +100,8 @@ export default function App() {
   const showNav = showChrome && screen !== "chat";
 
   const [escCtx, setEscCtx] = useState<EscCtx>("todas");
+  const [fichaDe, setFichaDe] = useState<number | null>(null); // escola escolhida na tela Escolas da DIES
+  const abrirFicha = (id: number) => { setFichaDe(id); setScreen("fichaEscola"); };
   const nav = (s: ScreenId) => { if (s === "escolas") setEscCtx("todas"); setScreen(s); };
   const openGallery = (s: ScreenId) => { setScreen(s); const p = PERFIL_BY_SCREEN[s]; if (p) setPerfil(p); };
 
@@ -161,7 +166,7 @@ export default function App() {
       case "secretariaHome": return <SecretariaHome nav={nav} usuario={usuario} abrirEscolas={(c) => { setEscCtx(c); setScreen("escolas"); }} />;
       case "admMatriculas": return <AdmMatriculas back={goHome} />;
       case "admTurmas": return <AdmTurmas back={goHome} nav={nav} />;
-      case "admProfessores": return <AdmProfessores back={goHome} />;
+      case "admProfessores": return <AdmProfessores back={goHome} nav={nav} />;
       case "admHorarios": return <AdmHorarios back={goHome} />;
       case "admDiario": return <AdmDiario back={goHome} />;
       case "admBoletins": return <AdmBoletins back={goHome} />;
@@ -180,7 +185,8 @@ export default function App() {
       case "gestorPendencias": return <GestorPendencias back={goHome} />;
       case "calendario": return <Calendario back={goHome} />;
       case "chat": return <Chat back={goHome} />;
-      case "diesEscolas": return <DiesEscolas back={goHome} />;
+      case "diesEscolas": return <DiesEscolas back={goHome} abrirFicha={abrirFicha} />;
+      case "fichaEscola": return <FichaEscola back={voltar} inicial={fichaDe} />;
       case "diesTurmas": return <DiesTurmas back={goHome} />;
       case "diesCursos": return <DiesCursos back={goHome} />;
       case "diesCalendario": return <DiesCalendario back={goHome} />;
@@ -196,6 +202,8 @@ export default function App() {
       case "historicoAlteracoes": return <HistoricoAlteracoes back={goHome} />;
       case "escPedidos": return <Pedidos back={goHome} lado="escola" />;
       case "diesPedidos": return <Pedidos back={goHome} lado="dies" />;
+      case "documentos": return <EnviarDocumentos back={goHome} />;
+      case "escDocumentos": return <DocumentosRecebidos back={goHome} />;
       case "telas": return <TodasTelas back={voltar} abrir={openGallery} />;
     }
   };

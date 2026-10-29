@@ -1,13 +1,15 @@
 /* Início da gestão da escola: números do ano, ocupação das turmas e atalhos.
-   Dados: GET /api/painel/escola/ (a escola é a do usuário logado). */
+   Dados: GET /api/painel/escola/ (a escola é a do usuário logado) e
+          GET /api/documentos/?status=aguardando (documentos que alunos e responsáveis mandaram). */
 
 import { EstadoApi } from "@/components/Form";
 import { ProfileHeader } from "@/components/ProfileHeader";
 import { SectionHeader } from "@/components/SectionHeader";
-import { IconAlert, IconBook, IconChat, IconCheck, IconClock, IconEdit, IconFood, IconGrid, IconPin, IconShield, IconUser, IconUsers } from "@/components/icons";
+import { IconAlert, IconBook, IconChat, IconCheck, IconChevron, IconClock, IconDoc, IconEdit, IconFood, IconGrid, IconPin, IconShield, IconUser, IconUsers } from "@/components/icons";
 import { useApi } from "@/hooks/useApi";
 import { useUsuario } from "@/hooks/useUsuario";
 import { porcentoBR } from "@/lib/formato";
+import type { Documento } from "@/lib/tipos";
 import type { ScreenId } from "@/routes";
 import { AMBER, BLUE, GREEN, INK, INK_SOFT, PINK, RED, TEAL, VIOLET } from "@/theme/colors";
 
@@ -29,7 +31,9 @@ const ATALHOS: { t: string; Icon: typeof IconEdit; c: string; s: ScreenId }[] = 
   { t: "Alunos e responsáveis", Icon: IconUser, c: BLUE, s: "admAlunos" },
   { t: "Turmas", Icon: IconGrid, c: GREEN, s: "admTurmas" },
   { t: "Pedidos à DIES", Icon: IconChat, c: BLUE, s: "escPedidos" },
-  { t: "Professores", Icon: IconUsers, c: TEAL, s: "admProfessores" },
+  { t: "Documentos recebidos", Icon: IconDoc, c: TEAL, s: "escDocumentos" },
+  { t: "Professores e funções", Icon: IconUsers, c: TEAL, s: "admProfessores" },
+  { t: "Ficha da escola", Icon: IconDoc, c: BLUE, s: "fichaEscola" },
   { t: "Horários", Icon: IconClock, c: BLUE, s: "admHorarios" },
   { t: "Diário", Icon: IconCheck, c: VIOLET, s: "admDiario" },
   { t: "Boletins", Icon: IconBook, c: PINK, s: "admBoletins" },
@@ -42,6 +46,8 @@ const ATALHOS: { t: string; Icon: typeof IconEdit; c: string; s: ScreenId }[] = 
 export function EscolaHome({ nav }: { nav: (s: ScreenId) => void }) {
   const usuario = useUsuario();
   const painel = useApi<PainelEscola>("/api/painel/escola/");
+  const documentos = useApi<Documento[]>("/api/documentos/?status=aguardando");
+  const aguardando = documentos.dados?.length ?? 0;
   const p = painel.dados;
   const ind = p?.indicadores;
   const sub = p ? `${p.escola.nome} · INEP ${p.escola.inep}` : usuario?.escola_nome ?? "Gestão da escola";
@@ -55,6 +61,16 @@ export function EscolaHome({ nav }: { nav: (s: ScreenId) => void }) {
         <EstadoApi carregando={painel.carregando} erro={painel.erro} onRetry={painel.recarregar}>
           {p && ind && (
             <>
+              {aguardando > 0 && (
+                <button onClick={() => nav("escDocumentos")} className="card mt-4 flex w-full items-center gap-3 p-3.5 text-left transition active:scale-[.99]" style={{ borderLeft: `3px solid ${TEAL}` }}>
+                  <div className="grid h-10 w-10 flex-none place-items-center rounded-2xl" style={{ background: TEAL + "16", color: TEAL }}><IconDoc size={20} /></div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13.5px] font-bold" style={{ color: INK }}>{aguardando === 1 ? "1 documento esperando análise" : `${aguardando} documentos esperando análise`}</p>
+                    <p className="text-[11.5px]" style={{ color: INK_SOFT }}>Atestados e documentos enviados pelas famílias</p>
+                  </div>
+                  <IconChevron size={18} style={{ color: "#cbd5e1" }} />
+                </button>
+              )}
               <SectionHeader title={`Indicadores · ${p.ano_letivo}`} />
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 {[
