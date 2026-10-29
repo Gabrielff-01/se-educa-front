@@ -67,7 +67,7 @@ export function SemTurmas({ semCadastro }: { semCadastro: boolean }) {
   if (semCadastro) {
     return <EmptyState title="Seu login não tem cadastro de professor" text="Peça ao RH da Secretaria para ligar o seu usuário ao seu cadastro de professor." icon={<IconUsers size={26} />} />;
   }
-  return <EmptyState title="Nenhuma turma por enquanto" text="Você ainda não foi lotado em nenhuma turma. Quando o RH fizer a lotação, ela aparece aqui." icon={<IconUsers size={26} />} />;
+  return <EmptyState title="Nenhuma turma por enquanto" text="Você ainda não tem turma. Quando a escola definir suas turmas e matérias, elas aparecem aqui." icon={<IconUsers size={26} />} />;
 }
 
 export function Confirmacao({ texto }: { texto: string }) {

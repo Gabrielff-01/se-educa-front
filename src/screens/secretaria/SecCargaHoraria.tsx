@@ -63,7 +63,7 @@ export function SecCargaHoraria({ back }: { back: () => void }) {
                   );
                 })}
               </div>
-              <p className="mt-3 text-[11px]" style={{ color: INK_SOFT }}>Aulas previstas = soma das matrizes curriculares das turmas. Para cobrir o que falta, faça a lotação de professores (RH).</p>
+              <p className="mt-3 text-[11px]" style={{ color: INK_SOFT }}>Aulas previstas = soma das matrizes curriculares das turmas. Para cobrir o que falta, o RH aloca professores na escola e a escola dá as turmas a eles.</p>
             </>
           )}
         </EstadoApi>

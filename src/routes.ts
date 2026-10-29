@@ -12,6 +12,7 @@ export const SCREENS = [
   "mapaEstudos", "transporte", "merenda", "mapaEscolas", "secPesquisas", "biblioteca", "gestorFreqSocial", "gestorPendencias",
   "diesEscolas", "diesTurmas", "diesCursos", "diesCalendario", "dedAtos", "dedOfertas", "dedMatrizes", "rhProfessores", "rhLotacoes",
   "rhPainel", "rhCarencias", "rhAfastamentos", "admAlunos", "historicoAlteracoes", "escPedidos", "diesPedidos",
+  "documentos", "escDocumentos", "fichaEscola",
   "telas",
 ] as const;
 
@@ -32,5 +33,5 @@ export const PERFIL_BY_SCREEN: Partial<Record<ScreenId, Perfil>> = {
   secretariaHome: "secretaria", secMatriculas: "secretaria", secEnturmacao: "secretaria", secPedagogico: "secretaria", secCargaHoraria: "secretaria", secRegional: "secretaria", secPesquisas: "secretaria",
   diesEscolas: "secretaria", diesTurmas: "secretaria", diesCursos: "secretaria", diesCalendario: "secretaria",
   dedAtos: "secretaria", dedOfertas: "secretaria", dedMatrizes: "secretaria", rhProfessores: "secretaria", rhLotacoes: "secretaria",
-  rhPainel: "secretaria", rhCarencias: "secretaria", rhAfastamentos: "secretaria", admAlunos: "escola", escPedidos: "escola", diesPedidos: "secretaria",
+  rhPainel: "secretaria", rhCarencias: "secretaria", rhAfastamentos: "secretaria", admAlunos: "escola", escPedidos: "escola", diesPedidos: "secretaria", escDocumentos: "escola",
 };

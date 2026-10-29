@@ -1,4 +1,5 @@
-/* Notificações dos últimos 30 dias: notas lançadas, faltas, tarefas novas, comunicados e respostas dos pedidos à DIES.
+/* Notificações dos últimos 30 dias: notas lançadas, faltas, tarefas novas, comunicados, respostas dos pedidos à DIES
+   e documentos (a escola vê os que chegaram; a família, se foram aceitos ou recusados).
    Dados: GET /api/notificacoes/ (cada item tem tipo, título, texto, quando e "nova").
    Assim que a lista chega, POST /api/notificacoes/ marca tudo como lido no servidor
    (o número do sino some). As que eram novas continuam destacadas até sair da tela. */
@@ -9,7 +10,7 @@ import { EstadoApi } from "@/components/Form";
 import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TopBar } from "@/components/TopBar";
-import { IconAlert, IconBell, IconChat, IconChevron, IconEdit, IconStar } from "@/components/icons";
+import { IconAlert, IconBell, IconChat, IconChevron, IconDoc, IconEdit, IconStar } from "@/components/icons";
 import type { IconProps } from "@/components/icons";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/api";
@@ -25,6 +26,7 @@ const ESTILO: Record<string, { Icon: (p: IconProps) => React.ReactElement; cor: 
   tarefa: { Icon: IconEdit, cor: VIOLET },
   comunicado: { Icon: IconChat, cor: TEAL },
   pedido: { Icon: IconChat, cor: BLUE },
+  documento: { Icon: IconDoc, cor: TEAL },
 };
 const PADRAO = { Icon: IconBell, cor: GREEN };
 
@@ -87,8 +89,8 @@ export function Notificacoes({ back, nav }: { back: () => void; nav: (s: ScreenI
 
 function Item({ n, nav }: { n: Notificacao; nav: (s: ScreenId) => void }) {
   const { Icon, cor } = ESTILO[n.tipo] ?? PADRAO;
-  // Só os pedidos à DIES ganham atalho: as outras notificações já ficam no menu do aluno.
-  const tela = n.tipo === "pedido" && (SCREENS as readonly string[]).includes(n.tela ?? "") ? (n.tela as ScreenId) : null;
+  // Pedidos à DIES e documentos ganham atalho: as outras notificações já ficam no menu do aluno.
+  const tela = (n.tipo === "pedido" || n.tipo === "documento") && (SCREENS as readonly string[]).includes(n.tela ?? "") ? (n.tela as ScreenId) : null;
   return (
     <div className="card flex items-start gap-3 p-3.5" style={{ borderLeft: n.nova ? `3px solid ${cor}` : "3px solid transparent", background: n.nova ? undefined : "#fbfcfe" }}>
       <div className="grid h-10 w-10 flex-none place-items-center rounded-2xl" style={{ background: cor + "16", color: cor }}><Icon size={20} /></div>
@@ -96,7 +98,7 @@ function Item({ n, nav }: { n: Notificacao; nav: (s: ScreenId) => void }) {
         <div className="flex items-center gap-2"><p className="text-[13.5px] font-bold" style={{ color: INK }}>{n.titulo}</p>{n.nova && <span className="h-2 w-2 flex-none rounded-full" style={{ background: RED }} />}</div>
         <p className="text-[12px]" style={{ color: INK_SOFT }}>{n.texto}</p>
         <p className="mt-1 text-[11px]" style={{ color: "#94a3b8" }}>{haQuanto(n.quando)}</p>
-        {tela && <button onClick={() => nav(tela)} className="mt-2 flex items-center gap-1 text-[12px] font-bold" style={{ color: cor }}>Abrir pedido<IconChevron size={14} /></button>}
+        {tela && <button onClick={() => nav(tela)} className="mt-2 flex items-center gap-1 text-[12px] font-bold" style={{ color: cor }}>{n.tipo === "pedido" ? "Abrir pedido" : "Ver documentos"}<IconChevron size={14} /></button>}
       </div>
     </div>
   );

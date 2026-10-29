@@ -1,6 +1,6 @@
 /* RH — Painel: o retrato do quadro de professores.
    Dados: GET /api/rh/painel/ -> total de professores ativos, 20h/40h, efetivos/temporários,
-   afastados hoje, quem está perto do limite de 2/3 em sala, quem está sem lotação,
+   afastados hoje, quem está perto do limite de 2/3 em sala, quem ainda não foi alocado em escola,
    aulas da matriz sem professor e aulas de professor afastado (precisam de substituto). */
 
 import { EstadoApi } from "@/components/Form";
@@ -22,7 +22,7 @@ type PainelRh = {
   temporarios: number;
   afastados_hoje: number;
   perto_do_limite: { nome: string; aulas: number; limite: number }[];
-  sem_lotacao: string[];
+  sem_escola: string[];
   aulas_sem_professor: number;
   aulas_para_substituir: number;
 };
@@ -32,7 +32,7 @@ export function RhPainel({ back, nav }: { back: () => void; nav: (s: ScreenId) =
   const p = painel.dados;
   const atalhos: { t: string; d: string; Icon: (p: IconProps) => React.ReactElement; s: ScreenId; cor: string }[] = [
     { t: "Professores", d: "Cadastro e acesso", Icon: IconUser, s: "rhProfessores", cor: GREEN },
-    { t: "Lotação", d: "Quem dá aula onde", Icon: IconUsers, s: "rhLotacoes", cor: BLUE },
+    { t: "Alocação", d: "Em qual escola cada um trabalha", Icon: IconUsers, s: "rhLotacoes", cor: BLUE },
     { t: "Carências", d: "Aulas sem professor", Icon: IconAlert, s: "rhCarencias", cor: RED },
     { t: "Afastamentos", d: "Licenças", Icon: IconCalendar, s: "rhAfastamentos", cor: VIOLET },
   ];
@@ -86,13 +86,13 @@ export function RhPainel({ back, nav }: { back: () => void; nav: (s: ScreenId) =
                   <p className="mt-1.5 text-[11px]" style={{ color: INK_SOFT }}>Pela Lei 11.738/2008, no máximo 2/3 da carga é em sala de aula.</p>
                 </div>
                 <div>
-                  <SectionHeader title="Sem lotação" action={p.sem_lotacao.length ? "Lotar" : undefined} onAction={() => nav("rhLotacoes")} />
+                  <SectionHeader title="Sem escola" action={p.sem_escola.length ? "Alocar" : undefined} onAction={() => nav("rhLotacoes")} />
                   <div className="card divide-y">
-                    {p.sem_lotacao.length === 0 && <p className="px-4 py-3 text-[12.5px]" style={{ color: INK_SOFT }}>Todos os professores ativos têm turma.</p>}
-                    {p.sem_lotacao.map((nome) => (
+                    {p.sem_escola.length === 0 && <p className="px-4 py-3 text-[12.5px]" style={{ color: INK_SOFT }}>Todos os professores ativos estão alocados em uma escola.</p>}
+                    {p.sem_escola.map((nome) => (
                       <div key={nome} className="flex items-center gap-3 px-4 py-2.5" style={{ borderColor: "#eef2f7" }}>
                         <p className="min-w-0 flex-1 truncate text-[12.5px] font-semibold" style={{ color: INK }}>{nome}</p>
-                        <Pill color={AMBER}>Sem turma</Pill>
+                        <Pill color={AMBER}>Sem escola</Pill>
                       </div>
                     ))}
                   </div>
