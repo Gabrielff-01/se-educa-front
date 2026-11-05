@@ -1,11 +1,12 @@
 /* Ficha da escola, no modelo da página de cada escola do site da SEDUC:
-   dados da escola, turmas (tocando na turma, os alunos dela), equipe diretiva, professores e resoluções (atos do DED).
+   dados da escola, turmas (tocando na turma, os alunos dela), equipe diretiva, professores (com a formação) e resoluções (atos autorizativos do DIES).
    - Secretaria: escolhe a escola (chega aqui pelo botão "Ficha" do DIES ou tocando na escola em Escolas da rede).
    - Gestão da escola: vê só a ficha da sua.
    Dados: GET /api/escolas/ID/ficha/?ano=AAAA e, para os alunos, GET /api/matriculas/?turma=ID&situacao=confirmada */
 
 import { Fragment, useState } from "react";
 import { Escolha, EstadoApi } from "@/components/Form";
+import { Formacoes } from "@/components/Formacoes";
 import { Pill } from "@/components/Pill";
 import { Screen } from "@/components/Screen";
 import { TopBar } from "@/components/TopBar";
@@ -65,10 +66,9 @@ export function FichaEscola({ back, inicial }: { back: () => void; inicial?: num
                 </div>
               </Bloco>
 
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              <div className="grid grid-cols-3 gap-2.5">
                 <Numero rotulo="Turmas" valor={f.resumo.turmas} />
                 <Numero rotulo="Alunos" valor={f.resumo.alunos} />
-                <Numero rotulo="Vagas" valor={f.resumo.vagas} />
                 <Numero rotulo="Servidores" valor={f.resumo.servidores} />
               </div>
 
@@ -114,10 +114,11 @@ export function FichaEscola({ back, inicial }: { back: () => void; inicial?: num
                 {f.professores.length === 0 ? <Vazio texto="O RH ainda não alocou professores nesta escola." /> : (
                   <div className="divide-y divide-[color:var(--color-line)]">
                     {f.professores.map((p) => (
-                      <div key={p.nome} className="flex items-center gap-2 py-2">
+                      <div key={p.nome} className="flex items-start gap-2 py-2.5">
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-[12.5px] font-semibold" style={{ color: INK }}>{p.nome}</p>
-                          <p className="text-[11px]" style={{ color: INK_SOFT }}>{p.vinculo_nome} · {p.horas} h na escola · {p.aulas} aulas por semana</p>
+                          <p className="mb-1 text-[11px]" style={{ color: INK_SOFT }}>{p.vinculo_nome} · {p.horas} h na escola · {p.aulas} aulas por semana</p>
+                          <Formacoes formacoes={p.formacoes} semFormacao="Formação não cadastrada pelo RH." />
                         </div>
                         {p.afastado && <Pill color={RED}>Afastado</Pill>}
                       </div>
@@ -127,7 +128,7 @@ export function FichaEscola({ back, inicial }: { back: () => void; inicial?: num
               </Bloco>
 
               <Bloco titulo="Resoluções">
-                {f.resolucoes.length === 0 ? <Vazio texto="Nenhum ato autorizativo cadastrado pelo DED." /> : (
+                {f.resolucoes.length === 0 ? <Vazio texto="Nenhum ato autorizativo cadastrado pelo DIES." /> : (
                   <div className="divide-y divide-[color:var(--color-line)]">
                     {f.resolucoes.map((r) => (
                       <div key={`${r.tipo_nome}-${r.numero}`} className="flex items-start gap-2 py-2">

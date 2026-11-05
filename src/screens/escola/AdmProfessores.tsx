@@ -2,13 +2,15 @@
    - O RH só aloca o professor na escola (horas e portaria).
    - A ESCOLA escolhe a função (Professor, Diretor, Coordenador, Secretário escolar),
      as turmas e matérias de quem é professor e, depois, o horário (tela Horários).
-   A API confere a matriz da série e o limite de 2/3 das horas que ele tem nesta escola.
+   A API confere a matriz da série (a própria da escola, se tiver; senão a da rede), a formação do professor
+   (só entra em matéria que a licenciatura dele habilita) e o limite de 2/3 das horas que ele tem nesta escola.
    Dados: GET /api/escola/professores/, POST /api/alocacoes/ID/funcao/, POST/DELETE /api/lotacoes/. */
 
 import { useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { AvisoErro, CartaoForm, Entrada, Escolha, EstadoApi, useEnvio } from "@/components/Form";
 import { EmptyState } from "@/components/EmptyState";
+import { Formacoes } from "@/components/Formacoes";
 import { Pill } from "@/components/Pill";
 import { Screen } from "@/components/Screen";
 import { TopBar } from "@/components/TopBar";
@@ -40,12 +42,14 @@ export function AdmProfessores({ back, nav }: { back: () => void; nav: (s: Scree
   const lista = todos.filter((p) => `${p.nome} ${p.funcao_nome} ${p.materias.join(" ")}`.toLowerCase().includes(q.toLowerCase()));
   const afastados = todos.filter((p) => p.afastamento).length;
 
-  // Matérias que a turma escolhida pode ter: as da matriz da série dela (DED).
-  // Se a série ainda não tem matriz, mostra todas e a API explica o problema ao salvar.
-  const materiasDaTurma = (turmaId: string) => {
+  // Matérias que o professor pode pegar na turma: as da matriz da série (a da escola, se ela tiver uma própria;
+  // senão a da rede) que a formação dele habilita. Sem matriz, mostra as habilitadas e a API explica ao salvar.
+  const materiasDaTurma = (turmaId: string, professor: ProfessorDaEscola) => {
     const turma = turmas.dados?.find((t) => String(t.id) === turmaId);
-    const daSerie = (matrizes.dados ?? []).filter((m) => m.serie === turma?.serie).flatMap((m) => m.itens.map((i) => i.materia));
-    const lista = (materias.dados ?? []).filter((m) => daSerie.length === 0 || daSerie.includes(m.id));
+    const daSerie = (matrizes.dados ?? []).filter((m) => m.serie === turma?.serie);
+    const matriz = daSerie.find((m) => m.escola === turma?.escola) ?? daSerie.find((m) => m.escola === null);
+    const naMatriz = matriz ? matriz.itens.map((i) => i.materia) : null;
+    const lista = (materias.dados ?? []).filter((m) => professor.habilitado_em.includes(m.id) && (naMatriz === null || naMatriz.includes(m.id)));
     return opcoesDe(lista, (m) => m.nome);
   };
 
@@ -53,12 +57,12 @@ export function AdmProfessores({ back, nav }: { back: () => void; nav: (s: Scree
   const abrirTurma = (p: ProfessorDaEscola) => {
     envio.limpar();
     const turma = String(turmas.dados?.[0]?.id ?? "");
-    setForm({ tipo: "turma", professor: p, turma, materia: materiasDaTurma(turma)[0]?.valor ?? "", aulas_semanais: "2" });
+    setForm({ tipo: "turma", professor: p, turma, materia: materiasDaTurma(turma, p)[0]?.valor ?? "", aulas_semanais: "2" });
   };
   const mudar = (campo: string) => (v: string) => {
     if (!form) return;
     // Trocou a turma: volta a matéria pra primeira da matriz da nova turma.
-    if (form.tipo === "turma" && campo === "turma") setForm({ ...form, turma: v, materia: materiasDaTurma(v)[0]?.valor ?? "" });
+    if (form.tipo === "turma" && campo === "turma") setForm({ ...form, turma: v, materia: materiasDaTurma(v, form.professor)[0]?.valor ?? "" });
     else setForm({ ...form, [campo]: v } as FormFuncao | FormTurma);
   };
 
@@ -104,6 +108,7 @@ export function AdmProfessores({ back, nav }: { back: () => void; nav: (s: Scree
                       </div>
                       <Pill color={ehProfessor ? TEAL : AMBER}>{p.funcao_nome}</Pill>
                     </div>
+                    <div className="mt-2"><Formacoes formacoes={p.formacoes} semFormacao="Sem formação cadastrada. Peça ao RH para cadastrar a formação dele antes de dar turmas." /></div>
                     {!ehProfessor && p.portaria_funcao && <p className="mt-1.5 text-[11px]" style={{ color: INK_SOFT }}>Portaria da função: {p.portaria_funcao}</p>}
                     {p.afastamento && (
                       <p className="mt-2 rounded-xl px-3 py-2 text-[11.5px] font-medium" style={{ background: RED + "10", color: RED }}>{p.afastamento.tipo_nome} até {dataBR(p.afastamento.fim)}.</p>
@@ -143,8 +148,15 @@ export function AdmProfessores({ back, nav }: { back: () => void; nav: (s: Scree
                         <CartaoForm titulo="Nova turma para o professor" onSalvar={salvar} onCancelar={() => setForm(null)} salvando={envio.enviando} erro={envio.erro} cor={TEAL}>
                           <div className="flex gap-2">
                             <Escolha label="Turma" value={aberto.turma} onChange={mudar("turma")} opcoes={opcoesDe(turmas.dados, (t) => `${t.nome} · ${t.turno_nome}`)} erro={envio.campos.turma} />
-                            <Escolha label="Matéria" value={aberto.materia} onChange={mudar("materia")} opcoes={materiasDaTurma(aberto.turma)} erro={envio.campos.materia} />
+                            <Escolha label="Matéria" value={aberto.materia} onChange={mudar("materia")} opcoes={materiasDaTurma(aberto.turma, aberto.professor)} erro={envio.campos.materia} vazio={materiasDaTurma(aberto.turma, aberto.professor).length ? undefined : "Nenhuma"} />
                           </div>
+                          {materiasDaTurma(aberto.turma, aberto.professor).length === 0 && (
+                            <p className="text-[11.5px] font-medium" style={{ color: AMBER }}>
+                              {aberto.professor.habilitado_em.length === 0
+                                ? "Ele ainda não tem formação que habilite a lecionar. O RH precisa cadastrar a licenciatura dele."
+                                : "A formação dele não habilita para nenhuma matéria da matriz dessa turma. Escolha outra turma."}
+                            </p>
+                          )}
                           <Entrada label="Aulas por semana" value={aberto.aulas_semanais} onChange={mudar("aulas_semanais")} erro={envio.campos.aulas_semanais} inputMode="numeric" />
                         </CartaoForm>
                       </div>

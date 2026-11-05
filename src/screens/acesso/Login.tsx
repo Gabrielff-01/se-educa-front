@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PrimaryButton } from "@/components/PrimaryButton";
-import { IconAlert, IconGrad, IconLayers, IconShield } from "@/components/icons";
+import { IconAlert, IconBack, IconGrad, IconLayers, IconShield } from "@/components/icons";
 import { PERFIS } from "@/data/perfis";
 import { login } from "@/lib/api";
 import type { Usuario } from "@/lib/tipos";
@@ -17,8 +17,10 @@ const DEMO = [
   { usuario: "rh1", senha: "rh", label: "RH" },
 ];
 
-/* Login de verdade: o Django confere a senha e diz qual é o perfil. Não tem mais seletor de perfil. */
-export function Login({ onEnter, onCadastro, onTelas }: { onEnter: (u: Usuario) => void; onCadastro: () => void; onTelas: () => void }) {
+/* Login de verdade: o Django confere a senha e diz qual é o perfil. Não tem mais seletor de perfil.
+   Quem fez a matrícula pela internet entra com o e-mail; enquanto o DIES não aprova,
+   a própria API responde com o andamento (em análise ou recusada com o motivo). */
+export function Login({ onEnter, onVoltar, onMatricula, onTelas }: { onEnter: (u: Usuario) => void; onVoltar: () => void; onMatricula: () => void; onTelas: () => void }) {
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,7 +29,7 @@ export function Login({ onEnter, onCadastro, onTelas }: { onEnter: (u: Usuario) 
 
   const entrar = async () => {
     setErro("");
-    if (!usuario || !senha) { setErro("Preencha usuário e senha para continuar."); return; }
+    if (!usuario || !senha) { setErro("Preencha usuário (ou e-mail) e senha para continuar."); return; }
     setLoading(true);
     // No plano grátis do Render a API "dorme": o primeiro acesso pode levar quase 1 minuto.
     const aviso = setTimeout(() => setDemorando(true), 4000);
@@ -46,7 +48,8 @@ export function Login({ onEnter, onCadastro, onTelas }: { onEnter: (u: Usuario) 
   return (
     <div className="scroll-area flex-1 overflow-y-auto">
       <div className="px-6 pb-8 pt-2">
-        <div className="flex flex-col items-center pt-4">
+        <button onClick={onVoltar} aria-label="Voltar ao início" className="mt-3 grid h-9 w-9 place-items-center rounded-full bg-white shadow-sm active:scale-95 transition" style={{ color: INK }}><IconBack size={20} /></button>
+        <div className="flex flex-col items-center">
           <div className="grid h-16 w-16 place-items-center rounded-3xl text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${BLUE}, ${TEAL})` }}><IconGrad size={34} strokeWidth={2} /></div>
           <h1 className="mt-3 text-2xl font-extrabold" style={{ color: INK }}><span style={{ color: GREEN }}>SE</span> Educa</h1>
           <p className="text-[12.5px]" style={{ color: INK_SOFT }}>Acesse sua conta</p>
@@ -54,15 +57,15 @@ export function Login({ onEnter, onCadastro, onTelas }: { onEnter: (u: Usuario) 
 
         <form className="mt-7 space-y-3" onSubmit={(e) => { e.preventDefault(); entrar(); }}>
           <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold" style={{ color: INK }}>Usuário</label>
-            <input value={usuario} onChange={(e) => setUsuario(e.target.value)} autoCapitalize="none" autoComplete="username" placeholder="Ex.: aluno1" className="w-full rounded-2xl border border-[color:var(--color-line)] bg-white px-4 py-3.5 text-[14px] outline-none focus:border-[color:var(--color-brand-blue)]" />
+            <label className="mb-1.5 block text-[12.5px] font-semibold" style={{ color: INK }}>Usuário ou e-mail</label>
+            <input value={usuario} onChange={(e) => setUsuario(e.target.value)} autoCapitalize="none" autoComplete="username" placeholder="Ex.: aluno1 ou seu e-mail" className="w-full rounded-2xl border border-[color:var(--color-line)] bg-white px-4 py-3.5 text-[14px] outline-none focus:border-[color:var(--color-brand-blue)]" />
           </div>
           <div>
             <label className="mb-1.5 block text-[12.5px] font-semibold" style={{ color: INK }}>Senha</label>
             <input value={senha} onChange={(e) => setSenha(e.target.value)} type="password" autoComplete="current-password" placeholder="••••••••" className="w-full rounded-2xl border border-[color:var(--color-line)] bg-white px-4 py-3.5 text-[14px] outline-none focus:border-[color:var(--color-brand-blue)]" />
           </div>
 
-          {erro && <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[12px] font-medium" style={{ background: RED + "12", color: RED }}><IconAlert size={16} />{erro}</div>}
+          {erro && <div className="flex items-start gap-2 rounded-xl px-3 py-2.5 text-[12px] font-medium" style={{ background: RED + "12", color: RED }}><IconAlert size={16} className="mt-0.5 flex-none" />{erro}</div>}
           {demorando && <p className="text-center text-[12px]" style={{ color: INK_SOFT }}>Acordando o servidor, só um instante...</p>}
 
           <div className="pt-2"><PrimaryButton color={BLUE} loading={loading}>{loading ? "Entrando..." : "Entrar"}</PrimaryButton></div>
@@ -70,7 +73,7 @@ export function Login({ onEnter, onCadastro, onTelas }: { onEnter: (u: Usuario) 
 
         <div className="mt-4 flex items-center justify-between text-[12.5px] font-semibold">
           <button style={{ color: INK_SOFT }}>Recuperar senha</button>
-          <button onClick={onCadastro} style={{ color: BLUE }}>Primeiro acesso</button>
+          <button onClick={onMatricula} style={{ color: BLUE }}>Fazer matrícula</button>
         </div>
 
         <div className="card mt-6 p-4">

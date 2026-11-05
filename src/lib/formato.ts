@@ -48,3 +48,37 @@ export function hojeISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+
+/* Põe os pontos e o traço no CPF enquanto a pessoa digita. Ex.: "52998224725" -> "529.982.247-25" */
+export function mascaraCpf(texto: string) {
+  const n = texto.replace(/\D/g, "").slice(0, 11);
+  return n.replace(/^(\d{3})(\d)/, "$1.$2").replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3").replace(/\.(\d{3})(\d{1,2})$/, ".$1-$2");
+}
+
+/* Confere os 2 dígitos verificadores do CPF (a mesma conta que a API faz). */
+export function cpfValido(cpf: string) {
+  const n = cpf.replace(/\D/g, "");
+  if (n.length !== 11 || /^(\d)\1{10}$/.test(n)) return false;
+  for (const tamanho of [9, 10]) {
+    let soma = 0;
+    for (let i = 0; i < tamanho; i++) soma += Number(n[i]) * (tamanho + 1 - i);
+    const digito = ((soma * 10) % 11) % 10;
+    if (digito !== Number(n[tamanho])) return false;
+  }
+  return true;
+}
+
+/* Telefone com DDD: "79999990000" -> "(79) 99999-0000" */
+export function mascaraTelefone(texto: string) {
+  const n = texto.replace(/\D/g, "").slice(0, 11);
+  if (n.length <= 2) return n.length ? `(${n}` : "";
+  if (n.length <= 6) return `(${n.slice(0, 2)}) ${n.slice(2)}`;
+  const meio = n.length === 11 ? 7 : 6;
+  return `(${n.slice(0, 2)}) ${n.slice(2, meio)}-${n.slice(meio)}`;
+}
+
+/* CEP: "49000000" -> "49000-000" */
+export function mascaraCep(texto: string) {
+  const n = texto.replace(/\D/g, "").slice(0, 8);
+  return n.length > 5 ? `${n.slice(0, 5)}-${n.slice(5)}` : n;
+}
