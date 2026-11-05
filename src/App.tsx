@@ -6,6 +6,8 @@ import { BottomNav } from "@/components/BottomNav";
 import { HOME_BY_PERFIL, PERFIL_BY_SCREEN, screenFromHash } from "@/routes";
 import type { ScreenId } from "@/routes";
 import { Cadastro } from "@/screens/acesso/Cadastro";
+import { Inicio } from "@/screens/acesso/Inicio";
+import { Inscricao } from "@/screens/acesso/Inscricao";
 import { Login } from "@/screens/acesso/Login";
 import { Splash } from "@/screens/acesso/Splash";
 import { AlunoHome } from "@/screens/aluno/AlunoHome";
@@ -53,12 +55,14 @@ import { SecPedagogico } from "@/screens/secretaria/SecPedagogico";
 import { SecPesquisas } from "@/screens/secretaria/SecPesquisas";
 import { SecRegional } from "@/screens/secretaria/SecRegional";
 import { SecretariaHome } from "@/screens/secretaria/SecretariaHome";
-import { DedAtos } from "@/screens/setores/DedAtos";
 import { DedMatrizes } from "@/screens/setores/DedMatrizes";
 import { DedOfertas } from "@/screens/setores/DedOfertas";
 import { DiesCalendario } from "@/screens/setores/DiesCalendario";
+import { DiesAtos } from "@/screens/setores/DiesAtos";
 import { DiesCursos } from "@/screens/setores/DiesCursos";
 import { DiesEscolas } from "@/screens/setores/DiesEscolas";
+import { DiesInscricoes } from "@/screens/setores/DiesInscricoes";
+import { DiesMunicipios } from "@/screens/setores/DiesMunicipios";
 import { DiesTurmas } from "@/screens/setores/DiesTurmas";
 import { RhLotacoes } from "@/screens/setores/RhLotacoes";
 import { RhAfastamentos } from "@/screens/setores/RhAfastamentos";
@@ -96,7 +100,7 @@ export default function App() {
     else setScreen("perfil");
   };
 
-  const showChrome = !["splash", "login", "cadastro", "telas"].includes(screen);
+  const showChrome = !["splash", "inicio", "inscricao", "login", "cadastro", "telas"].includes(screen);
   const showNav = showChrome && screen !== "chat";
 
   const [escCtx, setEscCtx] = useState<EscCtx>("todas");
@@ -123,9 +127,10 @@ export default function App() {
     return () => window.removeEventListener("popstate", onVoltar);
   }, []);
   const entrar = (u: Usuario) => { setUsuario(u); setPerfil(u.perfil); setScreen(HOME_BY_PERFIL[u.perfil]); setTab("inicio"); };
-  const sair = () => { logout(); setUsuario(null); setScreen("login"); };
-  // Depois da splash: quem já está logado vai direto pra tela inicial do seu perfil.
-  const depoisDaSplash = () => (usuario ? entrar(usuario) : setScreen("login"));
+  const sair = () => { logout(); setUsuario(null); setScreen("inicio"); };
+  // Depois da splash: quem já está logado vai direto pra tela inicial do seu perfil;
+  // quem não está vê a tela de entrada (Fazer matrícula ou Já tenho cadastro).
+  const depoisDaSplash = () => (usuario ? entrar(usuario) : setScreen("inicio"));
 
   // Número no sino: quantas notificações novas. Busca de novo a cada troca de tela
   // (assim, depois de abrir as notificações, o número some).
@@ -134,12 +139,14 @@ export default function App() {
   useEffect(() => { recarregarNotificacoes(); }, [screen, recarregarNotificacoes]);
   const naoLidas = (notificacoes.dados ?? []).filter((n) => n.nova).length;
 
-  const voltar = () => (window.history.length > 1 ? window.history.back() : setScreen("login"));
+  const voltar = () => (window.history.length > 1 ? window.history.back() : setScreen("inicio"));
 
   const renderScreen = () => {
     switch (screen) {
       case "splash": return <Splash go={depoisDaSplash} />;
-      case "login": return <Login onEnter={entrar} onCadastro={() => setScreen("cadastro")} onTelas={() => setScreen("telas")} />;
+      case "inicio": return <Inicio onMatricula={() => setScreen("inscricao")} onLogin={() => setScreen("login")} onTelas={() => setScreen("telas")} />;
+      case "inscricao": return <Inscricao voltar={() => setScreen("inicio")} irProLogin={() => setScreen("login")} />;
+      case "login": return <Login onEnter={entrar} onVoltar={() => setScreen("inicio")} onMatricula={() => setScreen("inscricao")} onTelas={() => setScreen("telas")} />;
       case "cadastro": return <Cadastro back={() => setScreen("login")} />;
       case "alunoHome": return <AlunoHome nav={nav} />;
       case "responsavelHome": return <ResponsavelHome nav={nav} />;
@@ -190,7 +197,8 @@ export default function App() {
       case "diesTurmas": return <DiesTurmas back={goHome} />;
       case "diesCursos": return <DiesCursos back={goHome} />;
       case "diesCalendario": return <DiesCalendario back={goHome} />;
-      case "dedAtos": return <DedAtos back={goHome} />;
+      case "diesAtos": return <DiesAtos back={goHome} />;
+      case "diesMunicipios": return <DiesMunicipios back={goHome} />;
       case "dedOfertas": return <DedOfertas back={goHome} />;
       case "dedMatrizes": return <DedMatrizes back={goHome} />;
       case "rhProfessores": return <RhProfessores back={goHome} />;
@@ -204,13 +212,15 @@ export default function App() {
       case "diesPedidos": return <Pedidos back={goHome} lado="dies" />;
       case "documentos": return <EnviarDocumentos back={goHome} />;
       case "escDocumentos": return <DocumentosRecebidos back={goHome} />;
+      case "diesInscricoes": return <DiesInscricoes back={goHome} nav={nav} />;
       case "telas": return <TodasTelas back={voltar} abrir={openGallery} />;
     }
   };
 
   // Largura máxima do conteúdo: login/cadastro ficam estreitos (formulário),
-  // o resto usa uma coluna confortável de ler no desktop, e a splash ocupa tudo.
-  const largura = screen === "splash" ? "" : screen === "login" || screen === "cadastro" ? "max-w-md" : "max-w-3xl";
+  // o resto usa uma coluna confortável de ler no desktop. A splash, a entrada e a matrícula
+  // pela internet (fundo cinza próprio e coluna centralizada, igual à página HTML) ocupam tudo.
+  const largura = ["splash", "inicio", "inscricao"].includes(screen) ? "" : screen === "login" || screen === "cadastro" ? "max-w-md" : "max-w-3xl";
 
   return (
     <UsuarioContext.Provider value={usuario}>

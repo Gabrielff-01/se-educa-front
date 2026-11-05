@@ -3,6 +3,7 @@
    - API_URL: endereço da API. No seu PC é o runserver; na Vercel vem da variável VITE_API_URL.
    - login(): manda usuário e senha e guarda o "crachá" (token JWT) no navegador.
    - api(): faz qualquer pedido já mostrando o crachá. Se ele venceu, tenta renovar uma vez.
+   - apiPublica(): pedido SEM login (ex.: a matrícula pela internet, feita antes de ter conta).
    - baixar(): busca um arquivo (ex.: o PDF de um documento) e devolve ele pronto pra mostrar na tela. */
 
 import type { Usuario } from "@/lib/tipos";
@@ -130,6 +131,14 @@ export async function api<T>(caminho: string, { method = "GET", body }: { method
   const resposta = await pedirLogado(caminho, { method, body: corpo });
 
   if (resposta.status === 204) return undefined as T; // DELETE não devolve nada
+  const dados = await resposta.json().catch(() => null);
+  if (!resposta.ok) throw lerErro(dados, resposta.status);
+  return dados as T;
+}
+
+/* Pedido sem crachá, para as telas de quem ainda não tem login (matrícula pela internet). */
+export async function apiPublica<T>(caminho: string, { method = "GET", body }: { method?: string; body?: unknown } = {}): Promise<T> {
+  const resposta = await pedir(caminho, { method, body: body === undefined ? undefined : JSON.stringify(body) });
   const dados = await resposta.json().catch(() => null);
   if (!resposta.ok) throw lerErro(dados, resposta.status);
   return dados as T;
