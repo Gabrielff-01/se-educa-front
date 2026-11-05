@@ -1,6 +1,7 @@
 /* Início da Secretaria (DIES, DED e RH). Cada setor vê só o que é da sua função:
-   - DIES: panorama da rede (/api/escolas/, /api/rede/matriculas/, pedidos das escolas em /api/solicitacoes/), matrículas, enturmação e frequência por regional.
-   - DED: panorama da regulação (/api/atos/, /api/matrizes/) e gestão pedagógica (ilustrativo).
+   - DIES: panorama da rede (/api/escolas/, /api/rede/matriculas/, atos em /api/atos/, pedidos das escolas em /api/solicitacoes/),
+     matrículas pela internet (/api/inscricoes/), enturmação e frequência por regional.
+   - DED: panorama das matrizes curriculares (/api/matrizes/, /api/ofertas/) e gestão pedagógica (ilustrativo).
    - RH: panorama dos professores (/api/rh/painel/) e carga horária das escolas.
    - Todos: os módulos do próprio setor + Histórico de alterações.
    Sem setor (superusuário ou galeria de telas): mostra tudo. */
@@ -11,13 +12,14 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { IconAlert, IconBook, IconCalendar, IconChart, IconChat, IconChevron, IconClock, IconDoc, IconEdit, IconGrad, IconGrid, IconLayers, IconPin, IconShield, IconTrend, IconUser, IconUsers } from "@/components/icons";
 import type { IconProps } from "@/components/icons";
 import { useApi } from "@/hooks/useApi";
-import type { Ato, Escola, Matriz, Pedido, Setor, Usuario } from "@/lib/tipos";
+import { ANO_ATUAL } from "@/lib/formato";
+import type { Ato, Escola, Inscricao, Matriz, Oferta, Pedido, Setor, Usuario } from "@/lib/tipos";
 import type { ScreenId } from "@/routes";
 import { FreqRegioes } from "@/screens/secretaria/FreqRegioes";
 import { AMBER, BLUE, GREEN, INDIGO, INK, INK_SOFT, RED, TEAL, VIOLET } from "@/theme/colors";
 import type { EscCtx } from "@/types";
 
-type MatriculasRegional = { regional: number; escolas: number; confirmadas: number; em_analise: number; sem_turma: number; vagas: number };
+type MatriculasRegional = { regional: number; escolas: number; confirmadas: number; em_analise: number; sem_turma: number };
 type PainelRh = { professores: number; afastados_hoje: number; aulas_sem_professor: number; aulas_para_substituir: number };
 /* Um cartão de número do panorama. n = null quando a API não respondeu (o cartão some). */
 type Cartao = { n: string | null; l: string; c: string; ir?: () => void };
@@ -29,10 +31,12 @@ const MODULOS_SETOR: Record<Setor, { titulo: string; cor: string; itens: { t: st
     { t: "Turmas", d: "Turmas de cada escola", Icon: IconUsers, s: "diesTurmas" },
     { t: "Cursos e matérias", d: "Séries e componentes", Icon: IconBook, s: "diesCursos" },
     { t: "Calendário letivo", d: "200 dias, feriados e férias", Icon: IconCalendar, s: "diesCalendario" },
+    { t: "Matrículas pela internet", d: "Pedidos das famílias", Icon: IconEdit, s: "diesInscricoes" },
     { t: "Pedidos das escolas", d: "Turmas novas e capacidade", Icon: IconChat, s: "diesPedidos" },
+    { t: "Atos autorizativos", d: "Credenciamento e reconhecimento", Icon: IconDoc, s: "diesAtos" },
+    { t: "Regionais e municípios", d: "Os 75 municípios em cada DRE", Icon: IconPin, s: "diesMunicipios" },
   ] },
   ded: { titulo: "DED · Regulação", cor: VIOLET, itens: [
-    { t: "Atos autorizativos", d: "Credenciamento e reconhecimento", Icon: IconDoc, s: "dedAtos" },
     { t: "Oferta de séries", d: "O que cada escola oferece", Icon: IconLayers, s: "dedOfertas" },
     { t: "Matrizes curriculares", d: "Carga horária por matéria", Icon: IconClock, s: "dedMatrizes" },
   ] },
@@ -79,25 +83,28 @@ export function SecretariaHome({ nav, abrirEscolas, usuario }: { nav: (s: Screen
   const matriculas = useApi<MatriculasRegional[]>(busca("dies", "/api/rede/matriculas/"));
   const pedidos = useApi<Pedido[]>(busca("dies", "/api/solicitacoes/?status=aberta"));
   const semResposta = (pedidos.dados ?? []).filter((p) => p.ultima_fala === "escola").length;
-  const atos = useApi<Ato[]>(busca("ded", "/api/atos/"));
+  const atos = useApi<Ato[]>(busca("dies", "/api/atos/"));
+  const inscricoes = useApi<Inscricao[]>(busca("dies", "/api/inscricoes/?status=aguardando"));
+  const aguardando = inscricoes.dados?.length ?? 0;
   const matrizes = useApi<Matriz[]>(busca("ded", "/api/matrizes/"));
+  const ofertas = useApi<Oferta[]>(busca("ded", "/api/ofertas/"));
   const rh = useApi<PainelRh>(busca("rh", "/api/rh/painel/"));
 
-  const soma = (campo: "confirmadas" | "vagas" | "sem_turma") => (matriculas.dados ? numero(matriculas.dados.reduce((s, r) => s + r[campo], 0)) : null);
+  const soma = (campo: "confirmadas" | "sem_turma") => (matriculas.dados ? numero(matriculas.dados.reduce((s, r) => s + r[campo], 0)) : null);
   const conta = <T,>(lista: T[] | null, filtro: (x: T) => boolean) => (lista ? numero(lista.filter(filtro).length) : null);
 
   // Um panorama por setor. Cada número só aparece se a API respondeu (nada de número inventado).
   const paineis: { setor: Setor; titulo: string; carregando: boolean; cartoes: Cartao[] }[] = [
-    { setor: "dies", titulo: "Panorama da rede", carregando: escolas.carregando || matriculas.carregando, cartoes: [
+    { setor: "dies", titulo: "Panorama da rede", carregando: escolas.carregando || matriculas.carregando || atos.carregando, cartoes: [
       { n: conta(escolas.dados, (e) => e.ativa), l: "Escolas ativas", c: BLUE, ir: () => nav("diesEscolas") },
       { n: soma("confirmadas"), l: "Alunos matriculados", c: TEAL, ir: () => nav("secMatriculas") },
-      { n: soma("vagas"), l: "Vagas abertas", c: AMBER, ir: () => nav("secMatriculas") },
+      { n: conta(atos.dados, (a) => !a.vigente), l: "Atos autorizativos vencidos", c: AMBER, ir: () => nav("diesAtos") },
       { n: soma("sem_turma"), l: "Alunos aguardando turma", c: RED, ir: () => nav("secEnturmacao") },
     ] },
-    { setor: "ded", titulo: "Panorama da regulação", carregando: atos.carregando || matrizes.carregando, cartoes: [
-      { n: conta(atos.dados, (a) => a.vigente), l: "Atos vigentes", c: VIOLET, ir: () => nav("dedAtos") },
-      { n: conta(atos.dados, (a) => !a.vigente), l: "Atos vencidos", c: RED, ir: () => nav("dedAtos") },
-      { n: conta(matrizes.dados, () => true), l: "Matrizes curriculares", c: BLUE, ir: () => nav("dedMatrizes") },
+    { setor: "ded", titulo: "Panorama da regulação", carregando: matrizes.carregando || ofertas.carregando, cartoes: [
+      { n: conta(ofertas.dados, (o) => o.ano_letivo === ANO_ATUAL), l: `Escolas com oferta em ${ANO_ATUAL}`, c: VIOLET, ir: () => nav("dedOfertas") },
+      { n: conta(matrizes.dados, (m) => m.escola === null), l: "Matrizes da rede", c: BLUE, ir: () => nav("dedMatrizes") },
+      { n: conta(matrizes.dados, (m) => m.escola !== null), l: "Matrizes próprias de escolas", c: TEAL, ir: () => nav("dedMatrizes") },
       { n: conta(matrizes.dados, (m) => !m.cumpre_minimo), l: "Matrizes abaixo do mínimo", c: AMBER, ir: () => nav("dedMatrizes") },
     ] },
     { setor: "rh", titulo: "Panorama dos professores", carregando: rh.carregando, cartoes: [
@@ -166,13 +173,22 @@ export function SecretariaHome({ nav, abrirEscolas, usuario }: { nav: (s: Screen
 
         {ve("dies") && (
           <>
+            {usuario && inscricoes.dados && (
+              <Atalho titulo="Matrículas pela internet" descricao={aguardando ? `${aguardando} ${aguardando === 1 ? "pedido de família esperando" : "pedidos de famílias esperando"} análise` : "Nenhum pedido de matrícula esperando análise"} Icon={IconDoc} cor={aguardando ? AMBER : INDIGO} ir={() => nav("diesInscricoes")} />
+            )}
             {usuario && pedidos.dados && (
               <Atalho titulo="Pedidos das escolas" descricao={semResposta ? `${semResposta} ${semResposta === 1 ? "pedido esperando" : "pedidos esperando"} sua resposta` : "Nenhum pedido esperando resposta"} Icon={IconChat} cor={semResposta ? RED : INDIGO} ir={() => nav("diesPedidos")} />
             )}
             <SectionHeader title="Matrículas e turmas" />
-            <div className="grid grid-cols-2 gap-3">
-              {[{ t: "Matrículas", Icon: IconEdit, s: "secMatriculas" as ScreenId }, { t: "Enturmação", Icon: IconUsers, s: "secEnturmacao" as ScreenId }].map((a) => (
-                <button key={a.t} onClick={() => nav(a.s)} className="card flex flex-col items-center gap-2 py-4 active:scale-95 transition">
+            <div className="grid grid-cols-3 gap-3">
+              {/* Caminho da matrícula pela internet: Pela internet (DIES aprova) -> Enturmação (DIES escolhe a turma) -> Matrículas */}
+              {[
+                { t: "Pela internet", Icon: IconDoc, s: "diesInscricoes" as ScreenId, n: aguardando },
+                { t: "Enturmação", Icon: IconUsers, s: "secEnturmacao" as ScreenId, n: 0 },
+                { t: "Matrículas", Icon: IconEdit, s: "secMatriculas" as ScreenId, n: 0 },
+              ].map((a) => (
+                <button key={a.t} onClick={() => nav(a.s)} className="card relative flex flex-col items-center gap-2 py-4 active:scale-95 transition">
+                  {a.n > 0 && <span className="absolute right-2 top-2 rounded-full px-1.5 text-[10.5px] font-bold text-white" style={{ background: RED }} title={`${a.n} aguardando análise`}>{a.n}</span>}
                   <div className="grid h-10 w-10 place-items-center rounded-2xl" style={{ background: TEAL + "16", color: TEAL }}><a.Icon size={20} /></div>
                   <span className="text-[11px] font-semibold" style={{ color: INK }}>{a.t}</span>
                 </button>

@@ -7,35 +7,38 @@ import { IconEdit, IconSearch } from "@/components/icons";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/api";
 import { opcoesDe } from "@/lib/formato";
-import type { Escola, Opcoes, Regional } from "@/lib/tipos";
+import type { Escola, Municipio, Opcoes, Regional } from "@/lib/tipos";
 import { BLUE, INK, INK_SOFT, RED } from "@/theme/colors";
 
 // Os campos de texto do cadastro (iguais aos da ficha da escola no site da SEDUC).
-const CAMPOS = ["nome", "codigo_inep", "cnpj", "dependencia", "regional", "zona", "telefone", "email", "numero_salas",
+const CAMPOS = ["nome", "codigo_inep", "cnpj", "dependencia", "zona", "telefone", "email", "numero_salas",
   "comodato", "endereco", "numero", "complemento", "bairro", "municipio", "cep", "localizacao"] as const;
 type FormEscola = { id?: number } & Record<(typeof CAMPOS)[number], string>;
 const VAZIO: FormEscola = {
-  nome: "", codigo_inep: "", cnpj: "", dependencia: "estadual", regional: "", zona: "urbana", telefone: "", email: "",
+  nome: "", codigo_inep: "", cnpj: "", dependencia: "estadual", zona: "urbana", telefone: "", email: "",
   numero_salas: "", comodato: "nao", endereco: "", numero: "", complemento: "", bairro: "", municipio: "", cep: "", localizacao: "",
 };
 const SIM_NAO = [{ valor: "nao", nome: "Não" }, { valor: "sim", nome: "Sim" }];
 
 /* DIES — Cadastro de escolas, com os dados cadastrais da ficha (CNPJ, contato, salas, endereço completo).
+   O município vem da lista dos 75 de Sergipe (/api/municipios/) e a DRE sai dele sozinha.
    O botão "Ficha" abre a ficha da escola: turmas, equipe diretiva, professores e resoluções. */
 export function DiesEscolas({ back, abrirFicha }: { back: () => void; abrirFicha: (id: number) => void }) {
   const escolas = useApi<Escola[]>("/api/escolas/");
   const regionais = useApi<Regional[]>("/api/regionais/");
+  const municipios = useApi<Municipio[]>("/api/municipios/");
+  const [dre, setDre] = useState("");
   const opcoes = useApi<Opcoes>("/api/opcoes/");
   const [busca, setBusca] = useState("");
   const [form, setForm] = useState<FormEscola | null>(null);
-  const envio = useEnvio([...CAMPOS, "latitude", "longitude"]);
+  const envio = useEnvio([...CAMPOS, "regional", "latitude", "longitude"]);
 
   const abrir = (escola?: Escola) => {
     envio.limpar();
-    if (!escola) return setForm({ ...VAZIO, regional: String(regionais.dados?.[0]?.id ?? "") });
+    if (!escola) return setForm({ ...VAZIO });
     setForm({
       id: escola.id, nome: escola.nome, codigo_inep: escola.codigo_inep, cnpj: escola.cnpj_formatado,
-      dependencia: escola.dependencia, regional: String(escola.regional), zona: escola.zona, telefone: escola.telefone,
+      dependencia: escola.dependencia, zona: escola.zona, telefone: escola.telefone,
       email: escola.email, numero_salas: escola.numero_salas === null ? "" : String(escola.numero_salas),
       comodato: escola.comodato ? "sim" : "nao", endereco: escola.endereco, numero: escola.numero,
       complemento: escola.complemento, bairro: escola.bairro, municipio: escola.municipio, cep: escola.cep_formatado,
@@ -51,7 +54,7 @@ export function DiesEscolas({ back, abrirFicha }: { back: () => void; abrirFicha
       throw new Error("Localização inválida. Use o formato -10.9113, -37.0517 (latitude, longitude).");
     }
     const corpo = {
-      ...dados, regional: Number(dados.regional) || null, comodato: dados.comodato === "sim",
+      ...dados, comodato: dados.comodato === "sim", // a regional a API tira do município
       numero_salas: dados.numero_salas.trim() === "" ? null : Number(dados.numero_salas),
       latitude, longitude,
     };
@@ -62,8 +65,12 @@ export function DiesEscolas({ back, abrirFicha }: { back: () => void; abrirFicha
   });
   const mudar = (campo: keyof FormEscola) => (v: string) => form && setForm({ ...form, [campo]: v });
   const c = envio.campos;
+  // DRE do município escolhido (só mostra; quem decide é a lista de municípios).
+  const doMunicipio = form ? municipios.dados?.find((m) => m.nome === form.municipio) : undefined;
 
-  const lista = (escolas.dados ?? []).filter((e) => `${e.nome} ${e.municipio} ${e.codigo_inep}`.toLowerCase().includes(busca.toLowerCase()));
+  const regionalSede = (id: number) => regionais.dados?.find((r) => r.id === id)?.sede;
+  const lista = (escolas.dados ?? []).filter((e) => `${e.nome} ${e.municipio} ${e.codigo_inep}`.toLowerCase().includes(busca.toLowerCase())
+    && (!dre || String(e.regional) === dre));
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <TopBar title="Escolas" subtitle={`DIES · ${escolas.dados?.length ?? 0} escolas cadastradas`} onBack={back} accent={BLUE} right={<BotaoNovo label="Nova escola" onClick={() => abrir()} />} />
@@ -76,10 +83,7 @@ export function DiesEscolas({ back, abrirFicha }: { back: () => void; abrirFicha
               <Entrada label="Código MEC (INEP)" value={form.codigo_inep} onChange={mudar("codigo_inep")} erro={c.codigo_inep} placeholder="28xxxxxx" inputMode="numeric" />
               <Entrada label="CNPJ (opcional)" value={form.cnpj} onChange={mudar("cnpj")} erro={c.cnpj} placeholder="00.000.000/0000-00" inputMode="numeric" />
             </div>
-            <div className="flex gap-2">
-              <Escolha label="DRE (regional)" value={form.regional} onChange={mudar("regional")} opcoes={opcoesDe(regionais.dados, (r) => r.nome)} erro={c.regional} vazio="Escolha" />
-              <Escolha label="Dependência" value={form.dependencia} onChange={mudar("dependencia")} opcoes={opcoes.dados?.dependencias ?? []} />
-            </div>
+            <Escolha label="Dependência" value={form.dependencia} onChange={mudar("dependencia")} opcoes={opcoes.dados?.dependencias ?? []} />
             <div className="flex flex-col gap-2 sm:flex-row">
               <Entrada label="Telefone" value={form.telefone} onChange={mudar("telefone")} erro={c.telefone} placeholder="79-32059518" />
               <Entrada label="E-mail" value={form.email} onChange={mudar("email")} erro={c.email} type="email" />
@@ -99,9 +103,17 @@ export function DiesEscolas({ back, abrirFicha }: { back: () => void; abrirFicha
               <Entrada label="Bairro" value={form.bairro} onChange={mudar("bairro")} erro={c.bairro} />
             </div>
             <div className="flex gap-2">
-              <div className="min-w-0 flex-[2]"><Entrada label="Município" value={form.municipio} onChange={mudar("municipio")} erro={c.municipio} /></div>
+              <div className="min-w-0 flex-[2]">
+                <Escolha label="Município" value={form.municipio} onChange={mudar("municipio")} erro={c.municipio || c.regional} vazio="Escolha"
+                  opcoes={(municipios.dados ?? []).map((m) => ({ valor: m.nome, nome: m.nome }))} />
+              </div>
               <div className="min-w-0 flex-1"><Entrada label="CEP" value={form.cep} onChange={mudar("cep")} erro={c.cep} placeholder="49000-000" inputMode="numeric" /></div>
             </div>
+            <p className="rounded-xl px-3 py-2 text-[12px]" style={{ background: BLUE + "0d", color: doMunicipio ? INK : INK_SOFT }}>
+              {doMunicipio
+                ? <>DRE: <b>{doMunicipio.regional_nome}</b>{regionalSede(doMunicipio.regional) && ` (sede em ${regionalSede(doMunicipio.regional)})`}. Vem do município.</>
+                : "Escolha o município: a DRE (regional) é preenchida sozinha."}
+            </p>
             <Entrada label="Localização no mapa (latitude, longitude)" value={form.localizacao} onChange={mudar("localizacao")} erro={c.latitude || c.longitude} placeholder="-10.9113, -37.0517" />
             <p className="text-[11px]" style={{ color: INK_SOFT }}>No Google Maps, clique com o botão direito em cima da escola e copie os números que aparecem primeiro.</p>
           </CartaoForm>
@@ -110,6 +122,7 @@ export function DiesEscolas({ back, abrirFicha }: { back: () => void; abrirFicha
           <IconSearch size={18} style={{ color: INK_SOFT }} />
           <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por nome, município ou INEP" className="flex-1 bg-transparent text-[13px] outline-none" />
         </div>
+        <div className="mb-3"><Escolha label="DRE" value={dre} onChange={setDre} opcoes={opcoesDe(regionais.dados, (r) => r.sede ? `${r.nome} · ${r.sede}` : r.nome)} vazio="Todas as regionais" /></div>
         <EstadoApi carregando={escolas.carregando} erro={escolas.erro} onRetry={escolas.recarregar}>
           <div className="space-y-2.5">
             {lista.map((e) => (

@@ -39,9 +39,13 @@ export type Opcoes = {
   alcances: Opcao[];
   dias_semana: Opcao[];
   dias_letivos_minimos: number;
+  niveis_formacao: Opcao[];
 };
 
-export type Regional = { id: number; nome: string };
+export type Regional = { id: number; nome: string; sede: string };
+
+/* Município de Sergipe e a regional (DRE) que cuida dele. A regional da escola vem daqui. */
+export type Municipio = { id: number; nome: string; regional: number; regional_nome: string };
 
 export type Escola = {
   id: number;
@@ -75,10 +79,10 @@ export type Escola = {
 export type FichaEscola = {
   escola: Escola;
   ano: number;
-  resumo: { turmas: number; alunos: number; vagas: number; servidores: number };
+  resumo: { turmas: number; alunos: number; servidores: number };
   turmas: { id: number; curso_nome: string; serie_nome: string; letra: string; turno_nome: string; sala: string; alunos: number; capacidade: number }[];
   equipe_diretiva: { funcao_nome: string; nome: string; portaria: string }[];
-  professores: { nome: string; vinculo_nome: string; horas: number; aulas: number; afastado: boolean }[];
+  professores: { nome: string; vinculo_nome: string; horas: number; aulas: number; afastado: boolean; formacoes: ResumoFormacao[] }[];
   por_vinculo: { vinculo_nome: string; total: number }[];
   resolucoes: { tipo_nome: string; curso_nome: string | null; numero: string; orgao_emissor: string; data_publicacao: string; validade: string | null; vigente: boolean }[];
 };
@@ -154,6 +158,8 @@ export type ItemMatriz = { materia: number; materia_nome?: string; aulas_semanai
 
 export type Matriz = {
   id: number;
+  escola: number | null; // null = vale para a rede toda; com escola = matriz própria daquela escola
+  escola_nome: string | null;
   serie: number;
   serie_nome: string;
   curso_nome: string;
@@ -185,7 +191,14 @@ export type Professor = {
   limite_aulas: number;
   aulas_ano_atual: number;
   afastamento_atual: { tipo_nome: string; fim: string } | null;
+  formacoes: Formacao[];
+  habilitado_em: string[]; // nomes das matérias que a formação habilita
 };
+
+/* Formação do professor (o RH cadastra). Licenciatura e complementação pedagógica habilitam
+   para as matérias marcadas; pós-graduação não habilita (LDB, art. 62). */
+export type ResumoFormacao = { curso: string; instituicao: string; nivel_nome: string; habilita: boolean; materias_nomes: string[]; ano_conclusao?: number | null };
+export type Formacao = ResumoFormacao & { id: number; nivel: string; ano_conclusao: number | null; materias: number[] };
 
 /* Em qual escola o professor trabalha (o RH aloca) e a função dele lá (a escola define). */
 export type Alocacao = {
@@ -225,6 +238,8 @@ export type ProfessorDaEscola = {
   limite_aulas: number;
   lotacoes: { id: number; turma: number; turma_nome: string; materia: number; materia_nome: string; aulas_semanais: number; no_quadro: number }[];
   afastamento: { tipo_nome: string; fim: string } | null;
+  formacoes: Formacao[];
+  habilitado_em: number[]; // ids das matérias que ele pode lecionar
 };
 
 /* GET /api/documentos/na-chamada/: atestado ou justificativa aceitos que cobrem o dia da chamada. */
@@ -248,8 +263,7 @@ export type EscolaDaRede = {
   longitude: number | null;
   cursos: string[];
   turnos: string[];
-  vagas: number;
-  vagas_por_serie: { curso_nome: string; serie_nome: string; turno_nome: string; vagas: number }[];
+  series: { curso_nome: string; serie_nome: string; turnos: string[] }[]; // séries com turma neste ano
   turmas?: number;
   alunos?: number;
   servidores?: number;
@@ -600,4 +614,64 @@ export type Documento = {
   analisado_por_nome: string | null;
   analisado_em: string | null;
   pode_cancelar: boolean;
+};
+
+/* ------------------------------------------------- Matrícula pela internet (app "inscricoes") */
+
+/* GET /api/inscricoes/escolas/ (sem login): escolas com as séries que oferecem e os turnos das turmas. */
+export type EscolaInscricao = {
+  id: number;
+  nome: string;
+  municipio: string;
+  bairro: string;
+  regional_nome: string;
+  series: { id: number; nome: string; curso_nome: string; turnos: Opcao[] }[];
+};
+
+/* Resposta do POST /api/inscricoes/ (tela de sucesso). */
+export type InscricaoEnviada = { protocolo: string; aluno_nome: string; escola_nome: string; serie_nome: string; curso_nome: string; email: string };
+
+/* Pedido de matrícula como o DIES vê na análise. */
+export type Inscricao = {
+  id: number;
+  protocolo: string;
+  aluno_nome: string;
+  data_nascimento: string;
+  idade: number;
+  sexo: string;
+  sexo_nome: string;
+  raca_nome: string;
+  cpf: string;
+  bolsa_familia: boolean;
+  nis: string;
+  responsavel_nome: string;
+  responsavel_cpf: string;
+  parentesco_nome: string;
+  telefone: string;
+  email: string;
+  cep: string;
+  endereco: string;
+  numero: string;
+  complemento: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  escola: number;
+  escola_nome: string;
+  municipio_escola: string;
+  serie: number;
+  serie_nome: string;
+  curso_nome: string;
+  ano_letivo: number;
+  turno_preferido: string;
+  turno_nome: string;
+  status: "aguardando" | "aprovada" | "recusada";
+  status_nome: string;
+  motivo_recusa: string;
+  analisada_por_nome: string | null;
+  analisada_em: string | null;
+  matricula: number | null;
+  matricula_situacao: string | null;
+  turma_nome: string | null;
+  criada_em: string;
 };

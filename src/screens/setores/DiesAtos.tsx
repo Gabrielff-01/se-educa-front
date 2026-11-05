@@ -8,12 +8,13 @@ import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/api";
 import { dataBR, opcoesDe } from "@/lib/formato";
 import type { Ato, Curso, Escola, Opcoes } from "@/lib/tipos";
-import { GREEN, INK, INK_SOFT, RED, VIOLET } from "@/theme/colors";
+import { BLUE, GREEN, INK, INK_SOFT, RED } from "@/theme/colors";
 
 type FormAto = { escola: string; curso: string; tipo: string; numero: string; orgao_emissor: string; data_publicacao: string; validade: string };
 
-/* DED — Atos autorizativos (o "documento" que autoriza a escola ou um curso dela a funcionar) */
-export function DedAtos({ back }: { back: () => void }) {
+/* DIES — Atos autorizativos (o "documento" que autoriza a escola ou um curso dela a funcionar).
+   Antes ficava no DED; o mentor pediu pra passar pro DIES, que já cuida do cadastro das escolas. */
+export function DiesAtos({ back }: { back: () => void }) {
   const atos = useApi<Ato[]>("/api/atos/");
   const escolas = useApi<Escola[]>("/api/escolas/");
   const cursos = useApi<Curso[]>("/api/cursos/");
@@ -37,7 +38,7 @@ export function DedAtos({ back }: { back: () => void }) {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <TopBar title="Atos autorizativos" subtitle={`DED · ${atos.dados?.length ?? 0} atos`} onBack={back} accent={VIOLET} right={<BotaoNovo label="Novo ato" cor={VIOLET} onClick={abrir} />} />
+      <TopBar title="Atos autorizativos" subtitle={`DIES · ${atos.dados?.length ?? 0} atos`} onBack={back} accent={BLUE} right={<BotaoNovo label="Novo ato" cor={BLUE} onClick={abrir} />} />
       <Screen>
         {vencidos > 0 && (
           <div className="mb-3 flex items-center gap-2 rounded-2xl p-3 text-[12.5px] font-semibold" style={{ background: RED + "12", color: RED }}>
@@ -45,7 +46,7 @@ export function DedAtos({ back }: { back: () => void }) {
           </div>
         )}
         {form && (
-          <CartaoForm titulo="Novo ato autorizativo" onSalvar={salvar} onCancelar={() => setForm(null)} salvando={envio.enviando} erro={envio.erro} cor={VIOLET}>
+          <CartaoForm titulo="Novo ato autorizativo" onSalvar={salvar} onCancelar={() => setForm(null)} salvando={envio.enviando} erro={envio.erro} cor={BLUE}>
             <Escolha label="Escola" value={form.escola} onChange={mudar("escola")} opcoes={opcoesDe(escolas.dados, (e) => e.nome)} erro={envio.campos.escola} />
             <div className="flex gap-2">
               <Escolha label="Tipo" value={form.tipo} onChange={mudar("tipo")} opcoes={opcoes.dados?.tipos_ato ?? []} />
@@ -65,7 +66,7 @@ export function DedAtos({ back }: { back: () => void }) {
           <div className="space-y-2.5">
             {(atos.dados ?? []).map((a) => (
               <div key={a.id} className="card flex items-start gap-3 p-4">
-                <div className="grid h-11 w-11 flex-none place-items-center rounded-2xl" style={{ background: VIOLET + "16", color: VIOLET }}><IconDoc size={20} /></div>
+                <div className="grid h-11 w-11 flex-none place-items-center rounded-2xl" style={{ background: BLUE + "16", color: BLUE }}><IconDoc size={20} /></div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[13.5px] font-bold" style={{ color: INK }}>{a.tipo_nome}{a.curso_nome ? ` · ${a.curso_nome}` : ""}</p>
                   <p className="text-[12px]" style={{ color: INK }}>{a.escola_nome}</p>

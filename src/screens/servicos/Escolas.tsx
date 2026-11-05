@@ -1,8 +1,8 @@
 /* Escolas da rede (lista e mapa) com as escolas cadastradas pelo DIES.
-   Dados: GET /api/escolas/rede/ (vagas = capacidade das turmas - alunos confirmados).
+   Dados: GET /api/escolas/rede/ (sem contar vagas: a escola mostra as séries e turnos que oferece).
    Quem toca numa escola:
    - Secretaria (DIES, DED, RH) ou a própria escola → Ficha da escola completa (turmas, alunos, equipe...);
-   - os outros (aluno, responsável, professor) → detalhe público (contato, vagas, rota). */
+   - os outros (aluno, responsável, professor) → detalhe público (contato, séries e turnos, rota). */
 
 import { useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
@@ -23,7 +23,6 @@ import type { EscCtx, Perfil } from "@/types";
 
 const CTX_INFO: Record<EscCtx, { t: string; s: string }> = {
   todas: { t: "Escolas da rede", s: "Escolas cadastradas pelo DIES" },
-  vagas: { t: "Escolas com vagas", s: "Vagas abertas por série e turno" },
   alunos: { t: "Alunos por escola", s: "Matrículas confirmadas na rede" },
   servidores: { t: "Servidores por escola", s: "Professores e equipe alocados pelo RH" },
 };
@@ -36,7 +35,6 @@ export function Escolas({ back, perfil, ctx = "todas", modoInicial = "lista" }: 
   const [modo, setModo] = useState(modoInicial);
   const [q, setQ] = useState("");
   const [filtros, setFiltros] = useState<string[]>([]);
-  const [soVagas, setSoVagas] = useState(contexto === "vagas");
   const [detalhe, setDetalhe] = useState<number | null>(null);
   const [sel, setSel] = useState<number | null>(null);
 
@@ -46,12 +44,11 @@ export function Escolas({ back, perfil, ctx = "todas", modoInicial = "lista" }: 
   const opcoesFiltro = [...new Set(todas.flatMap(tags))].sort();
 
   let lista = todas.filter((e) => `${e.nome} ${e.bairro} ${e.municipio}`.toLowerCase().includes(q.toLowerCase())
-    && filtros.every((f) => tags(e).includes(f)) && (!soVagas || e.vagas > 0));
+    && filtros.every((f) => tags(e).includes(f)));
   if (contexto === "alunos") lista = [...lista].sort((a, b) => (b.alunos ?? 0) - (a.alunos ?? 0));
   if (contexto === "servidores") lista = [...lista].sort((a, b) => (b.servidores ?? 0) - (a.servidores ?? 0));
-  if (contexto === "vagas") lista = [...lista].sort((a, b) => b.vagas - a.vagas);
-  const ativos = filtros.length + (soVagas ? 1 : 0) + (q ? 1 : 0);
-  const limpar = () => { setFiltros([]); setSoVagas(false); setQ(""); };
+  const ativos = filtros.length + (q ? 1 : 0);
+  const limpar = () => { setFiltros([]); setQ(""); };
 
   // Abrir uma escola: a gestão vê a ficha completa; os outros, o detalhe público.
   const det = todas.find((e) => e.id === detalhe);
@@ -85,7 +82,6 @@ export function Escolas({ back, perfil, ctx = "todas", modoInicial = "lista" }: 
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por escola, bairro ou cidade" className="flex-1 bg-transparent text-[13px] outline-none" />
         </div>
         <div className="-mx-5 mt-2.5 flex gap-2 overflow-x-auto px-5 pb-1">
-          <Chip ligado={soVagas} cor={GREEN} onClick={() => setSoVagas(!soVagas)}>Com vagas</Chip>
           {opcoesFiltro.map((f) => {
             const on = filtros.includes(f);
             return <Chip key={f} ligado={on} cor={VIOLET} onClick={() => setFiltros(on ? filtros.filter((x) => x !== f) : [...filtros, f])}>{f}</Chip>;
@@ -142,13 +138,13 @@ export function Escolas({ back, perfil, ctx = "todas", modoInicial = "lista" }: 
   );
 }
 
-/* Vagas, alunos (só gestão), cursos e dependência da escola. */
+/* Alunos (só gestão), cursos, turnos e dependência da escola. */
 function Etiquetas({ e, gestor, metrica }: { e: EscolaDaRede; gestor: boolean; metrica: string | null }) {
   return (
     <div className="mt-3 flex flex-wrap items-center gap-1.5">
-      {e.vagas > 0 ? <Pill color={GREEN}>{e.vagas} vagas</Pill> : <Pill color={RED}>Sem vagas</Pill>}
       {metrica ? <Pill color={BLUE}>{metrica}</Pill> : gestor && e.alunos !== undefined && <Pill color={BLUE}>{e.alunos.toLocaleString("pt-BR")} alunos</Pill>}
       {e.cursos.map((c) => <Pill key={c} color={VIOLET}>{c}</Pill>)}
+      {e.turnos.map((t) => <Pill key={t} color={GREEN}>{t}</Pill>)}
       <Pill color={INK_SOFT}>{e.dependencia_nome}</Pill>
     </div>
   );
