@@ -55,3 +55,4 @@ export const IconX = Ic(<path d="M6 6l12 12M18 6 6 18" />);
 export const IconTrend = Ic(<><path d="m3 17 6-6 4 4 8-8" /><path d="M15 7h6v6" /></>);
 export const IconExternal = Ic(<><path d="M14 4h6v6" /><path d="M20 4 11 13" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></>);
 export const IconPlay = Ic(<><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m10 9 5 3-5 3Z" /></>);
+export const IconTrophy = Ic(<><path d="M8 4h8v5a4 4 0 0 1-8 0Z" /><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4" /><path d="M12 13v4M9 21h6M10 17h4v4h-4z" /></>);

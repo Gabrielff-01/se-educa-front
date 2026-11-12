@@ -11,7 +11,7 @@ import { EstadoApi } from "@/components/Form";
 import { Pill } from "@/components/Pill";
 import { SectionHeader } from "@/components/SectionHeader";
 import { SeletorAluno } from "@/components/SeletorAluno";
-import { IconBell, IconBook, IconBus, IconCalendar, IconChat, IconCheck, IconClock, IconDoc, IconEdit, IconFood, IconGrad, IconGrid, IconPin, IconSend, IconStar } from "@/components/icons";
+import { IconBell, IconBook, IconBus, IconCalendar, IconChat, IconCheck, IconClock, IconDoc, IconEdit, IconFood, IconGrad, IconGrid, IconPin, IconSend, IconStar, IconTrophy } from "@/components/icons";
 import type { IconProps } from "@/components/icons";
 import { useAlunoEscolhido } from "@/hooks/useAlunoEscolhido";
 import { useApi } from "@/hooks/useApi";
@@ -52,6 +52,7 @@ export function AlunoHome({ nav }: { nav: (s: ScreenId) => void }) {
     { label: "Chat", Icon: IconChat, cor: "#ec4899", s: "chat" },
     { label: "Tarefas", Icon: IconEdit, cor: INDIGO, s: "tarefas" },
     { label: "Locais de estudo", Icon: IconPin, cor: RED, s: "mapaEstudos" },
+    { label: "Olimpíadas", Icon: IconTrophy, cor: "#8b5cf6", s: "olimpiadas" },
     { label: "Transporte", Icon: IconBus, cor: GREEN, s: "transporte" },
     { label: "Merenda", Icon: IconFood, cor: AMBER, s: "merenda" },
     { label: "Escolas", Icon: IconGrad, cor: TEAL, s: "escolas" },

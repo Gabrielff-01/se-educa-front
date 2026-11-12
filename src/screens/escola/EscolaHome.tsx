@@ -1,15 +1,16 @@
 /* Início da gestão da escola: números do ano, ocupação das turmas e atalhos.
    Dados: GET /api/painel/escola/ (a escola é a do usuário logado) e
-          GET /api/documentos/?status=aguardando (documentos que alunos e responsáveis mandaram). */
+          GET /api/documentos/?status=aguardando (documentos que alunos e responsáveis mandaram) e
+          GET /api/inscricoes/?status=aguardando (matrículas pela internet que a escola precisa analisar). */
 
 import { EstadoApi } from "@/components/Form";
 import { ProfileHeader } from "@/components/ProfileHeader";
 import { SectionHeader } from "@/components/SectionHeader";
-import { IconAlert, IconBook, IconChat, IconCheck, IconChevron, IconClock, IconDoc, IconEdit, IconFood, IconGrid, IconPin, IconShield, IconUser, IconUsers } from "@/components/icons";
+import { IconAlert, IconBook, IconChat, IconCheck, IconChevron, IconClock, IconDoc, IconEdit, IconFood, IconGrid, IconPin, IconShield, IconTrophy, IconUser, IconUsers, IconBus } from "@/components/icons";
 import { useApi } from "@/hooks/useApi";
 import { useUsuario } from "@/hooks/useUsuario";
 import { porcentoBR } from "@/lib/formato";
-import type { Documento } from "@/lib/tipos";
+import type { Documento, Inscricao } from "@/lib/tipos";
 import type { ScreenId } from "@/routes";
 import { AMBER, BLUE, GREEN, INK, INK_SOFT, PINK, RED, TEAL, VIOLET } from "@/theme/colors";
 
@@ -28,6 +29,7 @@ type PainelEscola = {
 
 const ATALHOS: { t: string; Icon: typeof IconEdit; c: string; s: ScreenId }[] = [
   { t: "Matrículas", Icon: IconEdit, c: AMBER, s: "admMatriculas" },
+  { t: "Matrículas pela internet", Icon: IconEdit, c: GREEN, s: "escInscricoes" },
   { t: "Alunos e responsáveis", Icon: IconUser, c: BLUE, s: "admAlunos" },
   { t: "Turmas", Icon: IconGrid, c: GREEN, s: "admTurmas" },
   { t: "Pedidos à DIES", Icon: IconChat, c: BLUE, s: "escPedidos" },
@@ -40,6 +42,8 @@ const ATALHOS: { t: string; Icon: typeof IconEdit; c: string; s: ScreenId }[] = 
   { t: "Freq. programas", Icon: IconShield, c: GREEN, s: "gestorFreqSocial" },
   { t: "Pendências", Icon: IconAlert, c: RED, s: "gestorPendencias" },
   { t: "Escolas", Icon: IconPin, c: RED, s: "escolas" },
+  { t: "Olimpíadas", Icon: IconTrophy, c: VIOLET, s: "escOlimpiadas" },
+  { t: "Transporte (rotas)", Icon: IconBus, c: GREEN, s: "escRotas" },
   { t: "Merenda", Icon: IconFood, c: AMBER, s: "merenda" },
 ];
 
@@ -48,6 +52,8 @@ export function EscolaHome({ nav }: { nav: (s: ScreenId) => void }) {
   const painel = useApi<PainelEscola>("/api/painel/escola/");
   const documentos = useApi<Documento[]>("/api/documentos/?status=aguardando");
   const aguardando = documentos.dados?.length ?? 0;
+  const inscricoes = useApi<Inscricao[]>("/api/inscricoes/?status=aguardando");
+  const pedidosNovos = inscricoes.dados?.length ?? 0;
   const p = painel.dados;
   const ind = p?.indicadores;
   const sub = p ? `${p.escola.nome} · INEP ${p.escola.inep}` : usuario?.escola_nome ?? "Gestão da escola";
@@ -61,6 +67,16 @@ export function EscolaHome({ nav }: { nav: (s: ScreenId) => void }) {
         <EstadoApi carregando={painel.carregando} erro={painel.erro} onRetry={painel.recarregar}>
           {p && ind && (
             <>
+              {pedidosNovos > 0 && (
+                <button onClick={() => nav("escInscricoes")} className="card mt-4 flex w-full items-center gap-3 p-3.5 text-left transition active:scale-[.99]" style={{ borderLeft: `3px solid ${GREEN}` }}>
+                  <div className="grid h-10 w-10 flex-none place-items-center rounded-2xl" style={{ background: GREEN + "16", color: GREEN }}><IconEdit size={20} /></div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13.5px] font-bold" style={{ color: INK }}>{pedidosNovos === 1 ? "1 matrícula pela internet para analisar" : `${pedidosNovos} matrículas pela internet para analisar`}</p>
+                    <p className="text-[11.5px]" style={{ color: INK_SOFT }}>Famílias que escolheram esta escola. Aprove e escolha a turma.</p>
+                  </div>
+                  <IconChevron size={18} style={{ color: "#cbd5e1" }} />
+                </button>
+              )}
               {aguardando > 0 && (
                 <button onClick={() => nav("escDocumentos")} className="card mt-4 flex w-full items-center gap-3 p-3.5 text-left transition active:scale-[.99]" style={{ borderLeft: `3px solid ${TEAL}` }}>
                   <div className="grid h-10 w-10 flex-none place-items-center rounded-2xl" style={{ background: TEAL + "16", color: TEAL }}><IconDoc size={20} /></div>

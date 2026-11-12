@@ -1,6 +1,6 @@
 /* Início da Secretaria (DIES, DED e RH). Cada setor vê só o que é da sua função:
    - DIES: panorama da rede (/api/escolas/, /api/rede/matriculas/, atos em /api/atos/, pedidos das escolas em /api/solicitacoes/),
-     matrículas pela internet (/api/inscricoes/), enturmação e frequência por regional.
+     enturmação e frequência por regional. (A matrícula pela internet é aprovada pela escola, não pelo DIES.)
    - DED: panorama das matrizes curriculares (/api/matrizes/, /api/ofertas/) e gestão pedagógica (ilustrativo).
    - RH: panorama dos professores (/api/rh/painel/) e carga horária das escolas.
    - Todos: os módulos do próprio setor + Histórico de alterações.
@@ -13,7 +13,7 @@ import { IconAlert, IconBook, IconCalendar, IconChart, IconChat, IconChevron, Ic
 import type { IconProps } from "@/components/icons";
 import { useApi } from "@/hooks/useApi";
 import { ANO_ATUAL } from "@/lib/formato";
-import type { Ato, Escola, Inscricao, Matriz, Oferta, Pedido, Setor, Usuario } from "@/lib/tipos";
+import type { Ato, Escola, Matriz, Oferta, Pedido, Setor, Usuario } from "@/lib/tipos";
 import type { ScreenId } from "@/routes";
 import { FreqRegioes } from "@/screens/secretaria/FreqRegioes";
 import { AMBER, BLUE, GREEN, INDIGO, INK, INK_SOFT, RED, TEAL, VIOLET } from "@/theme/colors";
@@ -31,7 +31,6 @@ const MODULOS_SETOR: Record<Setor, { titulo: string; cor: string; itens: { t: st
     { t: "Turmas", d: "Turmas de cada escola", Icon: IconUsers, s: "diesTurmas" },
     { t: "Cursos e matérias", d: "Séries e componentes", Icon: IconBook, s: "diesCursos" },
     { t: "Calendário letivo", d: "200 dias, feriados e férias", Icon: IconCalendar, s: "diesCalendario" },
-    { t: "Matrículas pela internet", d: "Pedidos das famílias", Icon: IconEdit, s: "diesInscricoes" },
     { t: "Pedidos das escolas", d: "Turmas novas e capacidade", Icon: IconChat, s: "diesPedidos" },
     { t: "Atos autorizativos", d: "Credenciamento e reconhecimento", Icon: IconDoc, s: "diesAtos" },
     { t: "Regionais e municípios", d: "Os 75 municípios em cada DRE", Icon: IconPin, s: "diesMunicipios" },
@@ -84,8 +83,6 @@ export function SecretariaHome({ nav, abrirEscolas, usuario }: { nav: (s: Screen
   const pedidos = useApi<Pedido[]>(busca("dies", "/api/solicitacoes/?status=aberta"));
   const semResposta = (pedidos.dados ?? []).filter((p) => p.ultima_fala === "escola").length;
   const atos = useApi<Ato[]>(busca("dies", "/api/atos/"));
-  const inscricoes = useApi<Inscricao[]>(busca("dies", "/api/inscricoes/?status=aguardando"));
-  const aguardando = inscricoes.dados?.length ?? 0;
   const matrizes = useApi<Matriz[]>(busca("ded", "/api/matrizes/"));
   const ofertas = useApi<Oferta[]>(busca("ded", "/api/ofertas/"));
   const rh = useApi<PainelRh>(busca("rh", "/api/rh/painel/"));
@@ -173,17 +170,13 @@ export function SecretariaHome({ nav, abrirEscolas, usuario }: { nav: (s: Screen
 
         {ve("dies") && (
           <>
-            {usuario && inscricoes.dados && (
-              <Atalho titulo="Matrículas pela internet" descricao={aguardando ? `${aguardando} ${aguardando === 1 ? "pedido de família esperando" : "pedidos de famílias esperando"} análise` : "Nenhum pedido de matrícula esperando análise"} Icon={IconDoc} cor={aguardando ? AMBER : INDIGO} ir={() => nav("diesInscricoes")} />
-            )}
             {usuario && pedidos.dados && (
               <Atalho titulo="Pedidos das escolas" descricao={semResposta ? `${semResposta} ${semResposta === 1 ? "pedido esperando" : "pedidos esperando"} sua resposta` : "Nenhum pedido esperando resposta"} Icon={IconChat} cor={semResposta ? RED : INDIGO} ir={() => nav("diesPedidos")} />
             )}
             <SectionHeader title="Matrículas e turmas" />
-            <div className="grid grid-cols-3 gap-3">
-              {/* Caminho da matrícula pela internet: Pela internet (DIES aprova) -> Enturmação (DIES escolhe a turma) -> Matrículas */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* A matrícula pela internet é aprovada pela escola; o que sobra sem turma aparece na Enturmação */}
               {[
-                { t: "Pela internet", Icon: IconDoc, s: "diesInscricoes" as ScreenId, n: aguardando },
                 { t: "Enturmação", Icon: IconUsers, s: "secEnturmacao" as ScreenId, n: 0 },
                 { t: "Matrículas", Icon: IconEdit, s: "secMatriculas" as ScreenId, n: 0 },
               ].map((a) => (

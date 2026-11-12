@@ -10,7 +10,7 @@ import { EstadoApi } from "@/components/Form";
 import { Screen } from "@/components/Screen";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TopBar } from "@/components/TopBar";
-import { IconAlert, IconBell, IconChat, IconChevron, IconDoc, IconEdit, IconStar } from "@/components/icons";
+import { IconAlert, IconBell, IconChat, IconChevron, IconDoc, IconEdit, IconStar, IconTrophy } from "@/components/icons";
 import type { IconProps } from "@/components/icons";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/api";
@@ -27,6 +27,8 @@ const ESTILO: Record<string, { Icon: (p: IconProps) => React.ReactElement; cor: 
   comunicado: { Icon: IconChat, cor: TEAL },
   pedido: { Icon: IconChat, cor: BLUE },
   documento: { Icon: IconDoc, cor: TEAL },
+  inscricao: { Icon: IconEdit, cor: GREEN },
+  olimpiada: { Icon: IconTrophy, cor: VIOLET },
 };
 const PADRAO = { Icon: IconBell, cor: GREEN };
 
@@ -90,7 +92,7 @@ export function Notificacoes({ back, nav }: { back: () => void; nav: (s: ScreenI
 function Item({ n, nav }: { n: Notificacao; nav: (s: ScreenId) => void }) {
   const { Icon, cor } = ESTILO[n.tipo] ?? PADRAO;
   // Pedidos à DIES e documentos ganham atalho: as outras notificações já ficam no menu do aluno.
-  const tela = (n.tipo === "pedido" || n.tipo === "documento") && (SCREENS as readonly string[]).includes(n.tela ?? "") ? (n.tela as ScreenId) : null;
+  const tela = ["pedido", "documento", "inscricao", "olimpiada"].includes(n.tipo) && (SCREENS as readonly string[]).includes(n.tela ?? "") ? (n.tela as ScreenId) : null;
   return (
     <div className="card flex items-start gap-3 p-3.5" style={{ borderLeft: n.nova ? `3px solid ${cor}` : "3px solid transparent", background: n.nova ? undefined : "#fbfcfe" }}>
       <div className="grid h-10 w-10 flex-none place-items-center rounded-2xl" style={{ background: cor + "16", color: cor }}><Icon size={20} /></div>

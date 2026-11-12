@@ -30,11 +30,11 @@ export function Inicio({ onMatricula, onLogin, onTelas }: { onMatricula: () => v
 
         <div className="space-y-3">
           <Opcao titulo="Fazer matrícula" texto={`Ainda não estuda na rede? Peça a vaga para ${ANO_ATUAL} pela internet.`} Icon={IconEdit} cor={VERDE} onClick={onMatricula} />
-          <Opcao titulo="Já tenho cadastro" texto="Entrar com usuário ou e-mail e senha." Icon={IconUser} cor={AZUL} onClick={onLogin} />
+          <Opcao titulo="Já tenho cadastro" texto="Entrar com CPF, usuário ou e-mail." Icon={IconUser} cor={AZUL} onClick={onLogin} />
         </div>
 
         <p className="mt-5 rounded-xl px-4 py-3 text-[12.5px] leading-relaxed" style={{ background: AZUL + "0f", color: "#334155" }}>
-          Já fez a matrícula pela internet? Toque em <b>Já tenho cadastro</b> e entre com o e-mail e a senha que você escolheu para ver o andamento.
+          Já fez a matrícula pela internet? Toque em <b>Já tenho cadastro</b> e entre com o CPF do aluno (ou o e-mail) e a senha que você escolheu para ver o andamento.
         </p>
 
         <div className="mt-10 flex items-center justify-center gap-1.5 text-[12.5px]" style={{ color: "#64748b" }}>

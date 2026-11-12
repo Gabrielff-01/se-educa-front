@@ -9,6 +9,7 @@ import { Cadastro } from "@/screens/acesso/Cadastro";
 import { Inicio } from "@/screens/acesso/Inicio";
 import { Inscricao } from "@/screens/acesso/Inscricao";
 import { Login } from "@/screens/acesso/Login";
+import type { Chegada } from "@/screens/acesso/Login";
 import { Splash } from "@/screens/acesso/Splash";
 import { AlunoHome } from "@/screens/aluno/AlunoHome";
 import { BibliotecaVirtual } from "@/screens/aluno/BibliotecaVirtual";
@@ -19,6 +20,7 @@ import { Horarios } from "@/screens/aluno/Horarios";
 import { MapaEstudos } from "@/screens/aluno/MapaEstudos";
 import { Merenda } from "@/screens/aluno/Merenda";
 import { Notas } from "@/screens/aluno/Notas";
+import { Olimpiadas } from "@/screens/aluno/Olimpiadas";
 import { Transporte } from "@/screens/aluno/Transporte";
 import { Calendario } from "@/screens/comum/Calendario";
 import { Chat } from "@/screens/comum/Chat";
@@ -61,7 +63,9 @@ import { DiesCalendario } from "@/screens/setores/DiesCalendario";
 import { DiesAtos } from "@/screens/setores/DiesAtos";
 import { DiesCursos } from "@/screens/setores/DiesCursos";
 import { DiesEscolas } from "@/screens/setores/DiesEscolas";
-import { DiesInscricoes } from "@/screens/setores/DiesInscricoes";
+import { EscInscricoes } from "@/screens/escola/EscInscricoes";
+import { EscOlimpiadas } from "@/screens/escola/EscOlimpiadas";
+import { EscRotas } from "@/screens/escola/EscRotas";
 import { DiesMunicipios } from "@/screens/setores/DiesMunicipios";
 import { DiesTurmas } from "@/screens/setores/DiesTurmas";
 import { RhLotacoes } from "@/screens/setores/RhLotacoes";
@@ -88,6 +92,11 @@ export default function App() {
   const [perfil, setPerfil] = useState<Perfil>(() => PERFIL_BY_SCREEN[screenFromHash() ?? "splash"] ?? usuario?.perfil ?? "aluno");
   const [tab, setTab] = useState<TabId>("inicio");
   const [a11y, setA11y] = useState<A11y>({ fontScale: 1, contraste: false, animacoes: true });
+  // Ida e volta entre o login e a matrícula: o CPF novo vai pra matrícula; o CPF com cadastro volta pro login.
+  const [cpfDaMatricula, setCpfDaMatricula] = useState<string | undefined>();
+  const [chegada, setChegada] = useState<Chegada | null>(null);
+  const irPraMatricula = (cpf?: string) => { setCpfDaMatricula(cpf); setScreen("inscricao"); };
+  const irProLogin = (c?: Chegada) => { setChegada(c ?? null); setScreen("login"); };
 
   const goHome = () => setScreen(HOME_BY_PERFIL[perfil]);
 
@@ -144,9 +153,9 @@ export default function App() {
   const renderScreen = () => {
     switch (screen) {
       case "splash": return <Splash go={depoisDaSplash} />;
-      case "inicio": return <Inicio onMatricula={() => setScreen("inscricao")} onLogin={() => setScreen("login")} onTelas={() => setScreen("telas")} />;
-      case "inscricao": return <Inscricao voltar={() => setScreen("inicio")} irProLogin={() => setScreen("login")} />;
-      case "login": return <Login onEnter={entrar} onVoltar={() => setScreen("inicio")} onMatricula={() => setScreen("inscricao")} onTelas={() => setScreen("telas")} />;
+      case "inicio": return <Inicio onMatricula={() => irPraMatricula()} onLogin={() => irProLogin()} onTelas={() => setScreen("telas")} />;
+      case "inscricao": return <Inscricao key={cpfDaMatricula ?? "novo"} cpfInicial={cpfDaMatricula} voltar={() => setScreen("inicio")} irProLogin={irProLogin} />;
+      case "login": return <Login key={chegada?.usuario ?? "vazio"} chegada={chegada} onEnter={entrar} onVoltar={() => setScreen("inicio")} onMatricula={irPraMatricula} onTelas={() => setScreen("telas")} />;
       case "cadastro": return <Cadastro back={() => setScreen("login")} />;
       case "alunoHome": return <AlunoHome nav={nav} />;
       case "responsavelHome": return <ResponsavelHome nav={nav} />;
@@ -184,6 +193,9 @@ export default function App() {
       case "secRegional": return <SecRegional back={goHome} />;
       case "mapaEstudos": return <MapaEstudos back={goHome} />;
       case "transporte": return <Transporte back={goHome} />;
+      case "olimpiadas": return <Olimpiadas back={goHome} />;
+      case "escOlimpiadas": return <EscOlimpiadas back={goHome} />;
+      case "escRotas": return <EscRotas back={goHome} />;
       case "merenda": return <Merenda back={goHome} />;
       case "mapaEscolas": return <Escolas key="mapa" back={goHome} perfil={perfil} modoInicial="mapa" />;
       case "secPesquisas": return <SecPesquisas back={goHome} />;
@@ -212,7 +224,7 @@ export default function App() {
       case "diesPedidos": return <Pedidos back={goHome} lado="dies" />;
       case "documentos": return <EnviarDocumentos back={goHome} />;
       case "escDocumentos": return <DocumentosRecebidos back={goHome} />;
-      case "diesInscricoes": return <DiesInscricoes back={goHome} nav={nav} />;
+      case "escInscricoes": return <EscInscricoes back={goHome} nav={nav} />;
       case "telas": return <TodasTelas back={voltar} abrir={openGallery} />;
     }
   };
