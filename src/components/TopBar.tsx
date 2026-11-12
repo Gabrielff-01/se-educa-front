@@ -1,7 +1,7 @@
 import { IconBack } from "@/components/icons";
-import { BLUE, INK, INK_SOFT } from "@/theme/colors";
+import { INK, INK_SOFT, PERFIL } from "@/theme/colors";
 
-export function TopBar({ title, subtitle, onBack, right, accent = BLUE }: { title: string; subtitle?: string; onBack?: () => void; right?: React.ReactNode; accent?: string }) {
+export function TopBar({ title, subtitle, onBack, right, accent = PERFIL }: { title: string; subtitle?: string; onBack?: () => void; right?: React.ReactNode; accent?: string }) {
   return (
     <div className="flex items-center gap-3 px-5 pt-4 pb-3">
       {onBack && (

@@ -3,12 +3,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
+import { NaoLidasContext } from "@/components/Painel";
+import { TEMA_PERFIL } from "@/theme/colors";
 import { HOME_BY_PERFIL, PERFIL_BY_SCREEN, screenFromHash } from "@/routes";
 import type { ScreenId } from "@/routes";
 import { Cadastro } from "@/screens/acesso/Cadastro";
 import { Inicio } from "@/screens/acesso/Inicio";
 import { Inscricao } from "@/screens/acesso/Inscricao";
 import { Login } from "@/screens/acesso/Login";
+import type { Chegada } from "@/screens/acesso/Login";
 import { Splash } from "@/screens/acesso/Splash";
 import { AlunoHome } from "@/screens/aluno/AlunoHome";
 import { BibliotecaVirtual } from "@/screens/aluno/BibliotecaVirtual";
@@ -19,6 +22,7 @@ import { Horarios } from "@/screens/aluno/Horarios";
 import { MapaEstudos } from "@/screens/aluno/MapaEstudos";
 import { Merenda } from "@/screens/aluno/Merenda";
 import { Notas } from "@/screens/aluno/Notas";
+import { Olimpiadas } from "@/screens/aluno/Olimpiadas";
 import { Transporte } from "@/screens/aluno/Transporte";
 import { Calendario } from "@/screens/comum/Calendario";
 import { Chat } from "@/screens/comum/Chat";
@@ -61,7 +65,9 @@ import { DiesCalendario } from "@/screens/setores/DiesCalendario";
 import { DiesAtos } from "@/screens/setores/DiesAtos";
 import { DiesCursos } from "@/screens/setores/DiesCursos";
 import { DiesEscolas } from "@/screens/setores/DiesEscolas";
-import { DiesInscricoes } from "@/screens/setores/DiesInscricoes";
+import { EscInscricoes } from "@/screens/escola/EscInscricoes";
+import { EscOlimpiadas } from "@/screens/escola/EscOlimpiadas";
+import { EscRotas } from "@/screens/escola/EscRotas";
 import { DiesMunicipios } from "@/screens/setores/DiesMunicipios";
 import { DiesTurmas } from "@/screens/setores/DiesTurmas";
 import { RhLotacoes } from "@/screens/setores/RhLotacoes";
@@ -79,26 +85,21 @@ import { useApi } from "@/hooks/useApi";
 import { UsuarioContext } from "@/hooks/useUsuario";
 import { logout, sessaoAtual } from "@/lib/api";
 import type { Notificacao, Usuario } from "@/lib/tipos";
-import type { A11y, EscCtx, Perfil, TabId } from "@/types";
+import type { A11y, EscCtx, Perfil } from "@/types";
 
 export default function App() {
   // Quem está logado (vem do login na API e fica guardado no navegador).
   const [usuario, setUsuario] = useState<Usuario | null>(() => sessaoAtual()?.usuario ?? null);
   const [screen, setScreen] = useState<ScreenId>(() => screenFromHash() ?? "splash");
   const [perfil, setPerfil] = useState<Perfil>(() => PERFIL_BY_SCREEN[screenFromHash() ?? "splash"] ?? usuario?.perfil ?? "aluno");
-  const [tab, setTab] = useState<TabId>("inicio");
   const [a11y, setA11y] = useState<A11y>({ fontScale: 1, contraste: false, animacoes: true });
+  // Ida e volta entre o login e a matrícula: o CPF novo vai pra matrícula; o CPF com cadastro volta pro login.
+  const [cpfDaMatricula, setCpfDaMatricula] = useState<string | undefined>();
+  const [chegada, setChegada] = useState<Chegada | null>(null);
+  const irPraMatricula = (cpf?: string) => { setCpfDaMatricula(cpf); setScreen("inscricao"); };
+  const irProLogin = (c?: Chegada) => { setChegada(c ?? null); setScreen("login"); };
 
   const goHome = () => setScreen(HOME_BY_PERFIL[perfil]);
-
-  const onTab = (t: TabId) => {
-    setTab(t);
-    if (t === "inicio") setScreen(HOME_BY_PERFIL[perfil]);
-    else if (t === "academico") setScreen(perfil === "aluno" ? "notas" : perfil === "responsavel" ? "boletim" : perfil === "professor" ? "profNotas" : "calendario");
-    else if (t === "servicos") setScreen(perfil === "professor" ? "profDiario" : perfil === "escola" || perfil === "secretaria" ? "escolas" : "secretariaVirtual");
-    else if (t === "notificacoes") setScreen("notificacoes");
-    else setScreen("perfil");
-  };
 
   const showChrome = !["splash", "inicio", "inscricao", "login", "cadastro", "telas"].includes(screen);
   const showNav = showChrome && screen !== "chat";
@@ -126,7 +127,7 @@ export default function App() {
     window.addEventListener("popstate", onVoltar);
     return () => window.removeEventListener("popstate", onVoltar);
   }, []);
-  const entrar = (u: Usuario) => { setUsuario(u); setPerfil(u.perfil); setScreen(HOME_BY_PERFIL[u.perfil]); setTab("inicio"); };
+  const entrar = (u: Usuario) => { setUsuario(u); setPerfil(u.perfil); setScreen(HOME_BY_PERFIL[u.perfil]); };
   const sair = () => { logout(); setUsuario(null); setScreen("inicio"); };
   // Depois da splash: quem já está logado vai direto pra tela inicial do seu perfil;
   // quem não está vê a tela de entrada (Fazer matrícula ou Já tenho cadastro).
@@ -144,9 +145,9 @@ export default function App() {
   const renderScreen = () => {
     switch (screen) {
       case "splash": return <Splash go={depoisDaSplash} />;
-      case "inicio": return <Inicio onMatricula={() => setScreen("inscricao")} onLogin={() => setScreen("login")} onTelas={() => setScreen("telas")} />;
-      case "inscricao": return <Inscricao voltar={() => setScreen("inicio")} irProLogin={() => setScreen("login")} />;
-      case "login": return <Login onEnter={entrar} onVoltar={() => setScreen("inicio")} onMatricula={() => setScreen("inscricao")} onTelas={() => setScreen("telas")} />;
+      case "inicio": return <Inicio onMatricula={() => irPraMatricula()} onLogin={() => irProLogin()} onTelas={() => setScreen("telas")} />;
+      case "inscricao": return <Inscricao key={cpfDaMatricula ?? "novo"} cpfInicial={cpfDaMatricula} voltar={() => setScreen("inicio")} irProLogin={irProLogin} />;
+      case "login": return <Login key={chegada?.usuario ?? "vazio"} chegada={chegada} onEnter={entrar} onVoltar={() => setScreen("inicio")} onMatricula={irPraMatricula} onTelas={() => setScreen("telas")} />;
       case "cadastro": return <Cadastro back={() => setScreen("login")} />;
       case "alunoHome": return <AlunoHome nav={nav} />;
       case "responsavelHome": return <ResponsavelHome nav={nav} />;
@@ -184,6 +185,9 @@ export default function App() {
       case "secRegional": return <SecRegional back={goHome} />;
       case "mapaEstudos": return <MapaEstudos back={goHome} />;
       case "transporte": return <Transporte back={goHome} />;
+      case "olimpiadas": return <Olimpiadas back={goHome} />;
+      case "escOlimpiadas": return <EscOlimpiadas back={goHome} />;
+      case "escRotas": return <EscRotas back={goHome} />;
       case "merenda": return <Merenda back={goHome} />;
       case "mapaEscolas": return <Escolas key="mapa" back={goHome} perfil={perfil} modoInicial="mapa" />;
       case "secPesquisas": return <SecPesquisas back={goHome} />;
@@ -212,7 +216,7 @@ export default function App() {
       case "diesPedidos": return <Pedidos back={goHome} lado="dies" />;
       case "documentos": return <EnviarDocumentos back={goHome} />;
       case "escDocumentos": return <DocumentosRecebidos back={goHome} />;
-      case "diesInscricoes": return <DiesInscricoes back={goHome} nav={nav} />;
+      case "escInscricoes": return <EscInscricoes back={goHome} nav={nav} />;
       case "telas": return <TodasTelas back={voltar} abrir={openGallery} />;
     }
   };
@@ -220,16 +224,24 @@ export default function App() {
   // Largura máxima do conteúdo: login/cadastro ficam estreitos (formulário),
   // o resto usa uma coluna confortável de ler no desktop. A splash, a entrada e a matrícula
   // pela internet (fundo cinza próprio e coluna centralizada, igual à página HTML) ocupam tudo.
-  const largura = ["splash", "inicio", "inscricao"].includes(screen) ? "" : screen === "login" || screen === "cadastro" ? "max-w-md" : "max-w-3xl";
+  // As telas de Início no visual novo (painel com coluna do calendário) usam a tela larga.
+  // Cor do perfil (aluno azul, responsável índigo, professor azul-petróleo, escola verde, secretaria laranja).
+  // Vira variáveis CSS que o menu, os botões e os cartões do Início usam.
+  const tema = TEMA_PERFIL[perfil] ?? TEMA_PERFIL.aluno;
+  const varsDoTema = { "--perfil": tema.cor, "--perfil-escura": tema.escura, "--perfil-luz": tema.luz, "--perfil-clara": tema.clara } as React.CSSProperties;
+  const TELAS_LARGAS: ScreenId[] = ["alunoHome", "responsavelHome", "professorHome", "escolaHome", "secretariaHome"];
+  const largura = ["splash", "inicio", "inscricao"].includes(screen) ? "" : screen === "login" || screen === "cadastro" ? "max-w-md" : TELAS_LARGAS.includes(screen) ? "max-w-[1360px]" : "max-w-3xl";
 
   return (
     <UsuarioContext.Provider value={usuario}>
-    <div className={`flex h-full w-full flex-col bg-[color:var(--color-surface)] md:flex-row ${a11y.animacoes ? "" : "no-anim"}`} style={{ filter: a11y.contraste ? "contrast(1.14) saturate(1.05)" : undefined }}>
+    <NaoLidasContext.Provider value={naoLidas}>
+    <div className={`flex h-full w-full flex-col bg-[color:var(--color-surface)] md:flex-row ${a11y.animacoes ? "" : "no-anim"}`} style={{ filter: a11y.contraste ? "contrast(1.14) saturate(1.05)" : undefined, ...varsDoTema }}>
       <main className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className={`mx-auto flex min-h-0 w-full flex-1 flex-col ${largura}`} style={{ zoom: a11y.fontScale } as React.CSSProperties}>{renderScreen()}</div>
       </main>
-      {showNav && <BottomNav active={tab} onChange={onTab} badge={naoLidas} />}
+      {showNav && <BottomNav perfil={perfil} usuario={usuario} screen={screen} nav={nav} badge={naoLidas} onSair={sair} />}
     </div>
+    </NaoLidasContext.Provider>
     </UsuarioContext.Provider>
   );
 }

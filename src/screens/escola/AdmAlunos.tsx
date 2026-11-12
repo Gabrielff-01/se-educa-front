@@ -13,11 +13,11 @@ import { TopBar } from "@/components/TopBar";
 import { IconCheck, IconEdit, IconSearch, IconUser, IconUsers } from "@/components/icons";
 import { useApi } from "@/hooks/useApi";
 import { api } from "@/lib/api";
-import { dataBR } from "@/lib/formato";
+import { dataBR, mascaraCpf } from "@/lib/formato";
 import type { Aluno, Opcao, Opcoes, Responsavel } from "@/lib/tipos";
 import { AMBER, BLUE, GREEN, INK, INK_SOFT, RED, VIOLET } from "@/theme/colors";
 
-type FormAluno = { nome: string; data_nascimento: string; programa_social: string; nis: string; necessidade_especial: string };
+type FormAluno = { nome: string; cpf: string; data_nascimento: string; programa_social: string; nis: string; necessidade_especial: string };
 type FormAcesso = { username: string; senha: string };
 // Qual formulário está aberto: editar um aluno, ou criar o login de um aluno / responsável.
 type Aberto = { tipo: "editar"; id: number; form: FormAluno } | { tipo: "acesso"; quem: "alunos" | "responsaveis"; id: number; nome: string; form: FormAcesso };
@@ -46,13 +46,13 @@ export function AdmAlunos({ back }: { back: () => void }) {
   const opcoes = useApi<Opcoes>("/api/opcoes/");
   const [aberto, setAberto] = useState<Aberto | null>(null);
   const [aviso, setAviso] = useState<{ id: string; texto: string } | null>(null);
-  const envio = useEnvio(["nome", "data_nascimento", "programa_social", "nis", "necessidade_especial", "username", "senha"]);
+  const envio = useEnvio(["nome", "cpf", "data_nascimento", "programa_social", "nis", "necessidade_especial", "username", "senha"]);
 
   // A faixa verde some sozinha depois de 4 s (só se ninguém trocou a mensagem nesse meio-tempo).
   const avisar = (id: string, msg: string) => { const novo = { id, texto: msg }; setAviso(novo); setTimeout(() => setAviso((atual) => (atual === novo ? null : atual)), 4000); };
   const abrirEdicao = (a: Aluno) => {
     envio.limpar();
-    setAberto({ tipo: "editar", id: a.id, form: { nome: a.nome, data_nascimento: a.data_nascimento, programa_social: a.programa_social, nis: a.nis, necessidade_especial: a.necessidade_especial } });
+    setAberto({ tipo: "editar", id: a.id, form: { nome: a.nome, cpf: a.cpf ? mascaraCpf(a.cpf) : "", data_nascimento: a.data_nascimento, programa_social: a.programa_social, nis: a.nis, necessidade_especial: a.necessidade_especial } });
   };
   const abrirAcesso = (quem: "alunos" | "responsaveis", id: number, nome: string) => {
     envio.limpar();
@@ -83,13 +83,16 @@ export function AdmAlunos({ back }: { back: () => void }) {
           <CartaoForm titulo="Editar aluno" onSalvar={salvar} onCancelar={() => setAberto(null)} salvando={envio.enviando} erro={envio.erro} cor={BLUE}>
             <Entrada label="Nome completo" value={f.nome} onChange={mudar("nome")} erro={envio.campos.nome} />
             <div className="flex flex-col gap-2 sm:flex-row">
+              <Entrada label="CPF do aluno" value={f.cpf} onChange={(v) => mudar("cpf")(mascaraCpf(v))} erro={envio.campos.cpf} inputMode="numeric" placeholder="000.000.000-00" />
               <Entrada label="Nascimento" type="date" value={f.data_nascimento} onChange={mudar("data_nascimento")} erro={envio.campos.data_nascimento} />
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Escolha label="Programa social" value={f.programa_social} onChange={mudar("programa_social")} opcoes={opcoes.dados?.programas ?? []} vazio="Nenhum" erro={envio.campos.programa_social} />
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Entrada label={f.programa_social ? "NIS (obrigatório)" : "NIS (opcional)"} value={f.nis} onChange={mudar("nis")} erro={envio.campos.nis} inputMode="numeric" placeholder="11 números" />
-              <Entrada label="Necessidade especial (AEE)" value={f.necessidade_especial} onChange={mudar("necessidade_especial")} erro={envio.campos.necessidade_especial} placeholder="Em branco = não tem" />
             </div>
+            <Entrada label="Necessidade especial (AEE)" value={f.necessidade_especial} onChange={mudar("necessidade_especial")} erro={envio.campos.necessidade_especial} placeholder="Em branco = não tem" />
           </CartaoForm>
           {/* Responsáveis: ligar e desligar grava na hora, separado do Salvar acima. */}
           <ResponsaveisDoAluno aluno={aluno} parentescos={opcoes.dados?.parentescos ?? []} mudou={(novo, msg) => { setAtualizados((t) => ({ ...t, [novo.id]: novo })); avisar(`alunos-${novo.id}`, msg); }} />

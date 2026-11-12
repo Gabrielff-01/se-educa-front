@@ -1,17 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* Fonte do SE Educa: Plus Jakarta Sans (títulos e textos). Inter fica de reserva. */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
 @theme inline {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
 
   --color-brand-blue: #1a6fd4;
+  /* Cor do perfil logado (o App troca; sem login fica o azul) */
+  --perfil: #1a6fd4;
+  --perfil-escura: #0f4c96;
+  --perfil-luz: #2a8be0;
+  --perfil-clara: #dbe8fa;
   --color-brand-blue-dark: #0f4c96;
   --color-brand-green: #10b981;
   --color-brand-teal: #0891b2;
   --color-brand-amber: #f59e0b;
   --color-brand-red: #ef4444;
 
-  --color-surface: #eef2f7;
+  /* Tons claros dos cartões coloridos do Início (azul, verde-água, verde e lilás) */
+  --color-tint-blue: #dbe8fa;
+  --color-tint-teal: #d3eef3;
+  --color-tint-green: #d9f3e7;
+  --color-tint-lilac: #e7e4fb;
+
+  --color-surface: #eef3f9;
   --color-ink: #0f2135;
   --color-ink-soft: #47586b;
   --color-line: #e2e8f0;
@@ -26,7 +38,7 @@ body,
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background: radial-gradient(circle at 20% 0%, #dbe7f5 0%, #eef2f7 45%, #e7edf4 100%);
+  background: #eef3f9;
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
 }
@@ -39,6 +51,20 @@ body {
 .scroll-area::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+/* Cartão que sobe um pouquinho quando o mouse passa (mostra que dá pra clicar) */
+.lift {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px -16px rgba(15, 33, 53, 0.35);
+}
+
+/* Faixas listradas das barras (ex.: média de cada matéria) */
+.listrado {
+  background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0 6px, transparent 6px 12px);
 }
 
 .card {

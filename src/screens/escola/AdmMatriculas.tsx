@@ -14,7 +14,7 @@ import { IconCheck, IconSearch } from "@/components/icons";
 import { useApi } from "@/hooks/useApi";
 import { useUsuario } from "@/hooks/useUsuario";
 import { api } from "@/lib/api";
-import { ANO_ATUAL, dataBR } from "@/lib/formato";
+import { ANO_ATUAL, dataBR, mascaraCpf } from "@/lib/formato";
 import type { Matricula, Oferta, Opcoes, Turma } from "@/lib/tipos";
 import { AMBER, GREEN, INK, INK_SOFT, RED } from "@/theme/colors";
 
@@ -29,12 +29,12 @@ const ABAS: { id: Aba; nome: string; cor: string; vazio: string }[] = [
 ];
 
 type FormNova = {
-  aluno_nome: string; aluno_nascimento: string; programa_social: string; nis: string; necessidade_especial: string;
+  aluno_nome: string; aluno_nascimento: string; aluno_cpf: string; programa_social: string; nis: string; necessidade_especial: string;
   responsavel_nome: string; responsavel_cpf: string; responsavel_telefone: string; parentesco: string;
   serie: string; turma: string;
 };
 const NOVA_VAZIA: FormNova = {
-  aluno_nome: "", aluno_nascimento: "", programa_social: "", nis: "", necessidade_especial: "",
+  aluno_nome: "", aluno_nascimento: "", aluno_cpf: "", programa_social: "", nis: "", necessidade_especial: "",
   responsavel_nome: "", responsavel_cpf: "", responsavel_telefone: "", parentesco: "mae", serie: "", turma: "",
 };
 const CAMPOS_NOVA = [...Object.keys(NOVA_VAZIA)];
@@ -94,7 +94,7 @@ export function AdmMatriculas({ back }: { back: () => void }) {
     });
   };
 
-  const abrirNova = () => { envioNova.limpar(); setNova({ ...NOVA_VAZIA, serie: String(ofertas.dados?.[0]?.series[0] ?? "") }); };
+  const abrirNova = () => { envioNova.limpar(); setNova({ ...NOVA_VAZIA, serie: seriesComTurma[0]?.valor ?? "" }); };
   const mudarNova = (campo: keyof FormNova) => (v: string) => nova && setNova({ ...nova, [campo]: v, ...(campo === "serie" ? { turma: "" } : {}) });
   const salvarNova = () => envioNova.enviar(async () => {
     if (!nova || !escola) return;
@@ -117,7 +117,9 @@ export function AdmMatriculas({ back }: { back: () => void }) {
 
   const ind = painel.dados?.indicadores;
   const numeros: Record<Aba, number | undefined> = { em_analise: ind?.em_analise, sem_turma: ind?.aguardando_turma, confirmada: ind?.alunos, cancelada: ind?.canceladas };
-  const seriesOferecidas = (ofertas.dados ?? []).flatMap((o) => o.series.map((id, i) => ({ valor: String(id), nome: o.series_nomes[i] })));
+  // Pedido do mentor: só aparecem as séries que a escola oferece E tem turma (nada de 6º ano em escola de Ensino Médio).
+  const seriesComTurma = (ofertas.dados ?? []).flatMap((o) => o.series.map((id, i) => ({ valor: String(id), nome: o.series_nomes[i] })))
+    .filter((s) => turmasDaSerie(s.valor).length > 0);
   const abaAtual = ABAS.find((a) => a.id === aba)!;
 
   return (
@@ -129,9 +131,10 @@ export function AdmMatriculas({ back }: { back: () => void }) {
             <p className="text-[11.5px] font-bold uppercase tracking-wide" style={{ color: INK_SOFT }}>Aluno</p>
             <Entrada label="Nome completo" value={nova.aluno_nome} onChange={mudarNova("aluno_nome")} erro={envioNova.campos.aluno_nome} />
             <div className="flex flex-col gap-2 sm:flex-row">
+              <Entrada label="CPF do aluno" value={nova.aluno_cpf} onChange={(v) => mudarNova("aluno_cpf")(mascaraCpf(v))} erro={envioNova.campos.aluno_cpf} inputMode="numeric" placeholder="000.000.000-00" />
               <Entrada label="Nascimento" type="date" value={nova.aluno_nascimento} onChange={mudarNova("aluno_nascimento")} erro={envioNova.campos.aluno_nascimento} />
-              <Entrada label="Necessidade especial (AEE)" value={nova.necessidade_especial} onChange={mudarNova("necessidade_especial")} erro={envioNova.campos.necessidade_especial} placeholder="Em branco = não tem" />
             </div>
+            <Entrada label="Necessidade especial (AEE)" value={nova.necessidade_especial} onChange={mudarNova("necessidade_especial")} erro={envioNova.campos.necessidade_especial} placeholder="Em branco = não tem" />
             <div className="flex flex-col gap-2 sm:flex-row">
               <Escolha label="Programa social" value={nova.programa_social} onChange={mudarNova("programa_social")} opcoes={opcoes.dados?.programas ?? []} vazio="Nenhum" erro={envioNova.campos.programa_social} />
               <Entrada label={nova.programa_social ? "NIS (obrigatório)" : "NIS (opcional)"} value={nova.nis} onChange={mudarNova("nis")} erro={envioNova.campos.nis} inputMode="numeric" placeholder="11 números" />
@@ -148,7 +151,7 @@ export function AdmMatriculas({ back }: { back: () => void }) {
             <p className="text-[10.5px]" style={{ color: INK_SOFT }}>Se o CPF já estiver cadastrado, o aluno é ligado a esse responsável.</p>
             <p className="pt-1 text-[11.5px] font-bold uppercase tracking-wide" style={{ color: INK_SOFT }}>Série e turma</p>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Escolha label="Série (oferecidas pela escola)" value={nova.serie} onChange={mudarNova("serie")} opcoes={seriesOferecidas} vazio="Escolha" erro={envioNova.campos.serie} />
+              <Escolha label="Série (só as que a escola tem turma)" value={nova.serie} onChange={mudarNova("serie")} opcoes={seriesComTurma} vazio="Escolha" erro={envioNova.campos.serie} />
               <Escolha label="Turma" value={nova.turma} onChange={mudarNova("turma")} opcoes={nova.serie ? opcoesTurma(nova.serie) : []} vazio="Sem turma (fica em análise)" erro={envioNova.campos.turma} />
             </div>
           </CartaoForm>
