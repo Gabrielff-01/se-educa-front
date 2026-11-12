@@ -34,7 +34,9 @@ Para usar outra API, crie um arquivo `.env` igual ao `.env.example` e mude o `VI
 Na Vercel, essa variável fica em Settings > Environment Variables.
 
 ## Login de demonstração
-Não tem mais a escolha de perfil: o perfil vem do usuário. As contas são criadas pelo
+Não tem mais a escolha de perfil: o perfil vem do usuário. O login tem 2 passos: primeiro o
+CPF, o usuário ou o e-mail (se o CPF não tiver cadastro, o app leva pra matrícula), depois a senha.
+A tela não mostra mais as contas prontas. Elas são criadas pelo
 comando `python manage.py popular_demo` da API, e a senha é o nome do perfil:
 aluno1/aluno, responsavel1/responsavel, professor1/professor, escola1/escola,
 dies1/dies, ded1/ded e rh1/rh.

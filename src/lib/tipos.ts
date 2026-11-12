@@ -40,6 +40,7 @@ export type Opcoes = {
   dias_semana: Opcao[];
   dias_letivos_minimos: number;
   niveis_formacao: Opcao[];
+  veiculos: Opcao[];
 };
 
 export type Regional = { id: number; nome: string; sede: string };
@@ -304,6 +305,7 @@ export type Aluno = {
   id: number;
   codigo: string;
   nome: string;
+  cpf: string; // só os números ("" quando a escola ainda não informou)
   data_nascimento: string;
   idade: number;
   programa_social: string;
@@ -625,7 +627,16 @@ export type EscolaInscricao = {
   municipio: string;
   bairro: string;
   regional_nome: string;
-  series: { id: number; nome: string; curso_nome: string; turnos: Opcao[] }[];
+  series: { id: number; nome: string; curso_nome: string; ordem: number; turnos: Opcao[] }[];
+};
+
+/* POST /api/auth/identificar/ (sem login): o CPF, usuário ou e-mail digitado já tem cadastro?
+   tem_login e pedido pedem a senha; sem_acesso manda pedir a senha na escola;
+   novo (CPF sem cadastro) vai pra matrícula; nao_encontrado é usuário/e-mail que não existe. */
+export type Identificacao = {
+  situacao: "tem_login" | "pedido" | "sem_acesso" | "novo" | "nao_encontrado";
+  mensagem: string;
+  cpf?: string;
 };
 
 /* Resposta do POST /api/inscricoes/ (tela de sucesso). */
@@ -675,3 +686,68 @@ export type Inscricao = {
   turma_nome: string | null;
   criada_em: string;
 };
+
+/* ------------------------------------------------- Olimpíadas escolares (app "olimpiadas") */
+
+/* Uma linha da classificação. nota/posição/medalha vêm vazias antes do resultado (para aluno e família). */
+export type LinhaOlimpiada = {
+  id: number;
+  aluno: number;
+  aluno_nome: string;
+  turma_nome: string;
+  nota: string | null;
+  posicao: number | null;
+  medalha: "" | "ouro" | "prata" | "bronze" | "destaque";
+};
+
+export type Olimpiada = {
+  id: number;
+  escola: number;
+  escola_nome: string;
+  nome: string;
+  materia: number | null;
+  materia_nome: string | null;
+  descricao: string;
+  ano_letivo: number;
+  data_prova: string;
+  series: number[];
+  series_nomes: string[];
+  nota_maxima: string;
+  premiados: number;
+  status: "inscricoes" | "andamento" | "resultado";
+  status_nome: string;
+  inscritos: number;
+  minhas: LinhaOlimpiada[]; // aluno/responsável: as inscrições dos seus alunos
+  pode_participar: boolean;
+  resultado_em: string | null;
+  criada_em: string;
+};
+
+/* ------------------------------------------------- Transporte escolar (app "transporte") */
+
+export type Parada = { id?: number; ordem?: number; local: string; referencia: string; horario: string };
+
+export type Rota = {
+  id: number;
+  escola: number;
+  escola_nome: string;
+  nome: string;
+  turno: string;
+  turno_nome: string;
+  veiculo: string;
+  veiculo_nome: string;
+  placa: string;
+  motorista: string;
+  telefone: string;
+  capacidade: number;
+  ativa: boolean;
+  observacao: string;
+  paradas: Parada[];
+  ocupados: number;
+  alunos: { id: number; aluno: number; aluno_nome: string; turma_nome: string | null; parada: number; parada_local: string; parada_horario: string }[];
+  cadastrada_por_nome: string | null;
+  atualizada_em: string;
+};
+
+/* GET /api/rotas/minha/?aluno=ID */
+export type MinhaRota = { aluno: { id: number; nome: string }; escola_nome: string | null; rota: Rota | null; parada: number | null };
